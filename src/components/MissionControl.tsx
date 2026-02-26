@@ -9,21 +9,23 @@ import {
   Calendar,
   Clock,
   Activity,
-  CheckCircle2,
   TrendingUp,
-  ListTodo,
-  RefreshCw,
+  AlertCircle,
   Pencil,
   Save,
   X,
+  ArrowRight,
+  Phone,
+  Mail,
+  RefreshCw,
+  Flame,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useLocalStorage, updateLastModified, getLastModified } from '../hooks/useLocalStorage';
 import {
   DEFAULT_KPI,
   DEFAULT_LEADS,
-  DEFAULT_PIPELINE,
   DEFAULT_PROGRESS,
-  DEFAULT_SCHEDULE,
   STORAGE_KEYS,
   type KpiItem,
   type Lead,
@@ -35,6 +37,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Reply,
   Handshake,
   DollarSign,
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string; icon: React.ElementType }> = {
+  'Belum Dihubungi': { label: 'Belum Dihubungi', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/20', icon: AlertCircle },
+  'Follow Up': { label: 'Perlu Follow Up', color: 'text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20', icon: Flame },
+  'Negosiasi': { label: 'Sedang Negosiasi', color: 'text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20', icon: Handshake },
+  'Dihubungi': { label: 'Sudah Dihubungi', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', borderColor: 'border-cyan-500/20', icon: Phone },
 };
 
 export default function Dashboard() {
@@ -56,19 +65,33 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-calculate pipeline from CRM leads
-  const pipelineData = useMemo(() => {
-    const statusCounts: Record<string, number> = {};
-    leads.forEach((lead) => {
-      statusCounts[lead.status] = (statusCounts[lead.status] || 0) + 1;
-    });
-    const total = leads.length || 1;
+  // Actionable leads grouped by status (only statuses that need action)
+  const actionableLeads = useMemo(() => {
+    const groups: Record<string, Lead[]> = {};
+    const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi'];
 
-    return DEFAULT_PIPELINE.map((item) => ({
-      ...item,
-      count: statusCounts[item.statusKey] || 0,
-      percentage: Math.round(((statusCounts[item.statusKey] || 0) / total) * 100),
-    }));
+    actionStatuses.forEach((status) => {
+      const filtered = leads.filter((l) => l.status === status);
+      if (filtered.length > 0) {
+        groups[status] = filtered
+          .sort((a, b) => {
+            const priorityOrder: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
+            return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+          })
+          .slice(0, 5); // Show max 5 per group
+      }
+    });
+
+    return groups;
+  }, [leads]);
+
+  // Pipeline summary counts
+  const pipelineSummary = useMemo(() => {
+    const statusCounts: Record<string, number> = {};
+    leads.forEach((l) => {
+      statusCounts[l.status] = (statusCounts[l.status] || 0) + 1;
+    });
+    return statusCounts;
   }, [leads]);
 
   // Auto-calculate days remaining
@@ -128,6 +151,7 @@ export default function Dashboard() {
 
     updateLastModified();
     setEditingKpi(null);
+    toast.success('KPI diperbarui!');
   };
 
   const cancelEditKpi = () => {
@@ -144,6 +168,16 @@ export default function Dashboard() {
     setKpiData(kpiData.map((kpi) => (kpi.key === 'revenue' ? { ...kpi, value: numValue } : kpi)));
     updateLastModified();
     setEditingRevenue(false);
+    toast.success('Target Revenue diperbarui!');
+  };
+
+  const priorityBadge = (priority: string) => {
+    const colors: Record<string, string> = {
+      High: 'bg-red-500/10 text-red-400 border-red-500/20',
+      Medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+      Low: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    };
+    return colors[priority] || colors.Low;
   };
 
   return (
@@ -175,14 +209,14 @@ export default function Dashboard() {
               <Target size={14} />
               Mission Control
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#fff4e6] mt-3">Project Dashboard</h1>
+            <h1 className="text-3xl md:text-4xl font-display tracking-tight text-[#fff4e6] mt-3">Mission Control</h1>
             <p className="text-[#e4c9a6] mt-2 text-sm flex items-center gap-2">
               <RefreshCw size={14} className="text-[#c99a6b]" />
               Last Update: {lastModifiedText}
             </p>
           </div>
 
-          <div className="flex items-center gap-6 bg-[#1c120b]/80 p-4 rounded-xl border border-[#3a2a1f]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto bg-[#1c120b]/80 p-4 rounded-xl border border-[#3a2a1f]">
             <div>
               <p className="text-xs text-[#caa984] uppercase tracking-wider font-semibold mb-1">Target Revenue</p>
               <p className="text-xl font-mono text-[#fff4e6]">{formatCurrency(progressData.target)}</p>
@@ -205,8 +239,8 @@ export default function Dashboard() {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Activity size={18} className="text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-200">KPI Metrics</h2>
-          <span className="text-xs font-mono text-gray-500 bg-[#111] px-2 py-1 rounded border border-[#222] ml-2">
+          <h2 className="text-lg font-heading text-gray-200">KPI Metrics</h2>
+          <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5 ml-2">
             Klik angka untuk edit
           </span>
         </div>
@@ -255,7 +289,7 @@ export default function Dashboard() {
                       <button onClick={saveKpi} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg">
                         <Save size={16} />
                       </button>
-                      <button onClick={cancelEditKpi} className="p-1.5 text-gray-500 hover:bg-[#222] rounded-lg">
+                      <button onClick={cancelEditKpi} className="p-1.5 text-gray-500 hover:bg-white/5 rounded-lg">
                         <X size={16} />
                       </button>
                     </div>
@@ -273,7 +307,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="absolute bottom-0 left-0 h-1 bg-[#222] w-full">
+                <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
                   <div
                     className={`h-full transition-all duration-700 ${kpi.color.replace('text-', 'bg-')}`}
                     style={{ width: `${progress}%` }}
@@ -286,72 +320,108 @@ export default function Dashboard() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Pipeline Status — auto-synced from CRM */}
-        <section className="lg:col-span-2">
-          <div className="flex items-center gap-2 mb-4">
-            <ListTodo size={18} className="text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-200">Pipeline Status</h2>
+        {/* Actionable Leads — integrated from Database Prospek */}
+        <section className="lg:col-span-2 space-y-6">
+          <div className="flex items-center gap-2">
+            <Flame size={18} className="text-orange-400" />
+            <h2 className="text-lg font-heading text-gray-200">Action Items</h2>
             <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 ml-2">
-              Auto-sync dari CRM
+              Live dari Database Prospek
             </span>
           </div>
 
-          <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/5 bg-white/5">
-                    <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Jumlah Lead</th>
-                    <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">% Total</th>
-                    <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#222]">
-                  {pipelineData.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                      <td className="p-4">
-                        <span className="text-sm font-medium text-gray-200">{item.status}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="font-mono text-white font-medium">{item.count}</span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm text-gray-400 w-8">{item.percentage}%</span>
-                          <div className="w-24 h-1.5 bg-[#222] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">
-                          {item.action}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Summary pills */}
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(pipelineSummary).map(([status, count]) => {
+              const config = STATUS_CONFIG[status];
+              if (!config) return null;
+              return (
+                <div key={status} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${config.bgColor} ${config.color} ${config.borderColor}`}>
+                  <config.icon size={12} />
+                  {status}: {count}
+                </div>
+              );
+            })}
+            {pipelineSummary['Deal'] ? (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                ✓ Deal: {pipelineSummary['Deal']}
+              </div>
+            ) : null}
           </div>
+
+          {/* Actionable lead cards by status */}
+          {Object.entries(actionableLeads).map(([status, statusLeads]) => {
+            const config = STATUS_CONFIG[status];
+            if (!config) return null;
+
+            return (
+              <div key={status}>
+                <div className="flex items-center gap-2 mb-3">
+                  <config.icon size={16} className={config.color} />
+                  <h3 className={`text-sm font-semibold ${config.color}`}>{config.label}</h3>
+                  <span className="text-xs font-mono text-gray-500">({statusLeads.length})</span>
+                </div>
+
+                <div className="space-y-2">
+                  {statusLeads.map((lead) => (
+                    <motion.div
+                      key={lead.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`bg-[#111]/50 backdrop-blur-xl border ${config.borderColor} rounded-xl p-4 hover:bg-white/5 transition-colors group`}
+                    >
+                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                         <div className="min-w-0 flex-1">
+                           <div className="flex items-center gap-2 mb-1">
+                             <p className="font-medium text-white text-sm truncate">{lead.name}</p>
+                             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${priorityBadge(lead.priority)}`}>
+                               {lead.priority}
+                             </span>
+                           </div>
+                           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                             <span>{lead.niche}</span>
+                             <span>•</span>
+                             <span>{lead.location}</span>
+                           </div>
+                         </div>
+
+                         <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end mt-2 sm:mt-0">
+                           <div className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bgColor} ${config.color} flex items-center gap-1.5`}>
+                             <ArrowRight size={12} />
+                             {lead.action}
+                           </div>
+                         </div>
+                      </div>
+
+                      {lead.notes && (
+                        <p className="text-xs text-gray-500 mt-2 line-clamp-1 italic">"{lead.notes}"</p>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {Object.keys(actionableLeads).length === 0 && (
+            <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-8 text-center">
+              <p className="text-gray-500 text-sm">Belum ada lead yang perlu action. Tambahkan di Database Prospek!</p>
+            </div>
+          )}
         </section>
 
         {/* Progress Menuju Rp 10 Juta */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={18} className="text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-200">Progress Menuju Rp 10 Juta</h2>
+            <h2 className="text-lg font-heading text-gray-200">Progress Menuju Rp 10 Juta</h2>
           </div>
 
           <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-6 h-[calc(100%-2rem)]">
             {/* Donut Chart */}
             <div className="flex flex-col items-center justify-center mb-8 relative">
               <svg className="w-48 h-48" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#222" strokeWidth="12" />
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
                 <circle
                   cx="60"
                   cy="60"
@@ -374,11 +444,11 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-[#222]">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
                 <span className="text-sm text-gray-400">Target Total</span>
                 <span className="font-mono text-white font-medium">{formatCurrency(progressData.target)}</span>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-[#222]">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
                 <span className="text-sm text-gray-400">Revenue Masuk</span>
                 <div className="flex items-center gap-2">
                   {editingRevenue ? (
@@ -414,13 +484,13 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-[#222]">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
                 <span className="text-sm text-gray-400">Sisa Target</span>
                 <span className="font-mono text-orange-400 font-medium">
                   {formatCurrency(progressData.target - progressData.current)}
                 </span>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-[#222]">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
                 <span className="text-sm text-gray-400">Klien Dibutuhkan</span>
                 <span className="font-mono text-white font-medium">
                   {clientsNeeded}{' '}
@@ -431,95 +501,6 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
-
-      {/* Jadwal Harian */}
-      <section>
-        <div className="flex items-center gap-2 mb-6">
-          <Clock size={18} className="text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-200">Jadwal Harian — Protokol Wajib</h2>
-        </div>
-
-        <div className="relative pl-4 md:pl-8">
-          <div className="absolute left-[23px] md:left-[39px] top-4 bottom-4 w-px bg-[#222]"></div>
-
-          <div className="space-y-6">
-            {DEFAULT_SCHEDULE.map((item, idx) => {
-              const currentHour = currentTime.getHours();
-              const currentMin = currentTime.getMinutes();
-              const currentTimeStr = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
-
-              let isActive = false;
-              if (item.time.includes('–')) {
-                const [start, end] = item.time.split('–');
-                isActive = currentTimeStr >= start && currentTimeStr < end;
-              } else {
-                isActive = currentTimeStr >= item.time;
-              }
-
-              return (
-                <div key={idx} className="relative flex items-start gap-6 group">
-                  <div
-                    className={`relative z-10 w-3 h-3 mt-1.5 rounded-full border-2 bg-[#111] transition-colors ${isActive
-                      ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]'
-                      : 'border-[#444] group-hover:border-gray-400'
-                      }`}
-                  >
-                    {isActive && (
-                      <div className="absolute inset-0 rounded-full bg-orange-500 animate-ping opacity-20"></div>
-                    )}
-                  </div>
-
-                  <div
-                    className={`flex-1 rounded-xl border p-5 transition-all ${isActive
-                      ? 'bg-[#1a1a1a] border-orange-500/30 shadow-[0_4px_20px_rgba(0,0,0,0.2)]'
-                      : 'bg-[#111] border-[#222] hover:border-[#333]'
-                      }`}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className={`font-mono text-sm ${isActive ? 'text-orange-400 font-bold' : 'text-gray-400'}`}>
-                            {item.time}
-                          </span>
-                          <span
-                            className={`text-xs font-mono px-2 py-0.5 rounded border ${isActive
-                              ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                              : 'bg-[#222] text-gray-500 border-[#333]'
-                              }`}
-                          >
-                            {item.category}
-                          </span>
-                        </div>
-                        <h3 className={`text-base md:text-lg font-medium ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                          {item.activity}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-gray-500 bg-[#0a0a0a]/50 px-3 py-1.5 rounded-lg border border-white/5 shrink-0">
-                        <Clock size={14} />
-                        <span className="font-mono text-xs">{item.duration}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2 pt-3 border-t border-[#222]/50">
-                      <CheckCircle2
-                        size={16}
-                        className={isActive ? 'text-orange-500 mt-0.5 shrink-0' : 'text-emerald-500/50 mt-0.5 shrink-0'}
-                      />
-                      <div>
-                        <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold block mb-0.5">
-                          Output Wajib
-                        </span>
-                        <span className={`text-sm ${isActive ? 'text-gray-300' : 'text-gray-400'}`}>{item.output}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

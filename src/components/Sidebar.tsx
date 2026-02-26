@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { LayoutDashboard, Users, LineChart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -22,11 +22,21 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 
   const navItems = [
-    { id: 'mission-control', label: 'Mission Control', icon: LayoutDashboard },
-    { id: 'crm', label: 'Database Prospek', icon: Users },
-    { id: 'finance', label: 'Finance & Perf.', icon: LineChart },
-    { id: 'pricing', label: 'Pricing Packages', icon: Tag },
+    { id: 'mission-control', label: 'Mission Control', icon: LayoutDashboard, shortcut: 'Ctrl+1' },
+    { id: 'crm', label: 'Database Prospek', icon: Users, shortcut: 'Ctrl+2' },
+    { id: 'finance', label: 'Finance & Perf.', icon: LineChart, shortcut: 'Ctrl+3' },
+    { id: 'pricing', label: 'Pricing Packages', icon: Tag, shortcut: 'Ctrl+4' },
   ];
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const handleChange = () => {
+      if (media.matches) setIsOpen(false);
+    };
+    handleChange();
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
 
   return (
     <aside
@@ -52,7 +62,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.15 }}
               >
-                <h1 className="font-bold text-white tracking-tight leading-tight text-[15px]">WelliBuilds</h1>
+                <h1 className="font-display text-white tracking-tight leading-tight text-[15px]">WelliBuilds</h1>
                 <p className="text-[9px] font-mono text-orange-400/80 uppercase tracking-[0.2em]">Freelance Dashboard</p>
               </motion.div>
             )}
@@ -164,7 +174,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               {/* Tooltip on collapse */}
               {!isOpen && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1a1a1a]/90 backdrop-blur-sm border border-white/10 text-white text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50">
-                  {item.label}
+                  <span>{item.label}</span>
+                  <span className="ml-2 text-[10px] font-mono text-gray-400">{item.shortcut}</span>
                   <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
                 </div>
               )}

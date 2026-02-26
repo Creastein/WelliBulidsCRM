@@ -96,18 +96,7 @@ export interface WeeklyReview {
 // DEFAULT DATA
 // ============================================================
 
-export const DEFAULT_LEADS: Lead[] = [
-    { id: 1, name: 'Asvara Villa Keliki', niche: 'Villa', location: 'Bali', priority: 'High', status: 'Belum Dihubungi', action: 'DM WA + Email', notes: 'Reviews terbanyak di Bali! Butuh website manajemen booking profesional' },
-    { id: 2, name: 'La Bella Hotel Villa & Spa', niche: 'Villa', location: 'Gili T', priority: 'High', status: 'Follow Up', action: 'Sudah DM → Follow up', notes: '1.632 reviews! Villa + hotel + spa populer' },
-    { id: 3, name: 'Villa Carmela Batu', niche: 'Villa', location: 'Batu', priority: 'Medium', status: 'Belum Dihubungi', action: 'WA owner langsung', notes: 'Villa keluarga paling populer di Batu Malang, 440 reviews' },
-    { id: 4, name: 'Ratu Makeup & Beauty', niche: 'Salon & Barbershop', location: 'Mataram', priority: 'High', status: 'Belum Dihubungi', action: 'DM IG + WA', notes: 'Rating sempurna, tawarkan sistem galeri makeup premium' },
-    { id: 5, name: 'Jelajah Coffee Kuta', niche: 'Restoran & Cafe', location: 'Bali', priority: 'Medium', status: 'Follow Up', action: 'Follow up 7 hari', notes: 'Hanya pakai IG; info menu & lokasi tersebar, tidak ada landing page' },
-    { id: 6, name: 'Casabelle Villa Uluwatu', niche: 'Villa', location: 'Bali', priority: 'High', status: 'Dihubungi', action: 'Tunggu balasan', notes: 'Klien ini tidak akan peduli dengan harga website Rp 1,5 juta. Komisi OTA (20%) itu sekitar Rp 1,7 Juta PER MALAM.' },
-    { id: 7, name: 'Fitness Plus Epicentrum', niche: 'Gym & Fitness', location: 'Mataram', priority: 'High', status: 'Belum Dihubungi', action: 'DM WA', notes: 'Tawarkan fitur tur virtual 360° untuk menjaring member baru' },
-    { id: 8, name: 'Roemah Langko', niche: 'Restoran & Cafe', location: 'Mataram', priority: 'High', status: 'Belum Dihubungi', action: 'Email + WA', notes: 'Restoran populer, website menu & reservasi, targetkan fitur turis' },
-    { id: 9, name: 'Sugar Bloom Atelier', niche: 'Restoran & Cafe', location: 'BSD', priority: 'Medium', status: 'Follow Up', action: 'WA', notes: 'Branding kuat tapi conversion bisa lebih baik' },
-    { id: 10, name: 'Ubud Arindra Private Pool', niche: 'Villa', location: 'Bali', priority: 'High', status: 'Follow Up', action: 'Follow up WA', notes: 'Belum ada website, butuh honeymoon package + booking' },
-];
+export const DEFAULT_LEADS: Lead[] = [];
 
 export const DEFAULT_KPI: KpiItem[] = [
     {

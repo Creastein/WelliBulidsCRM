@@ -64,7 +64,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } }
 };
 
 export default function Pricing() {
@@ -81,7 +81,7 @@ export default function Pricing() {
             <Tag size={14} />
             Pricing Strategy
           </div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mt-3">
+          <h1 className="text-3xl md:text-4xl font-display tracking-tight text-white mt-3">
             Paket Harga & Layanan
           </h1>
           <p className="text-sm text-gray-400 mt-2 max-w-xl">
@@ -106,7 +106,7 @@ export default function Pricing() {
       </motion.header>
 
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         variants={containerVariants}
         initial="hidden"
         animate="show"
@@ -115,14 +115,18 @@ export default function Pricing() {
           <motion.div
             key={idx}
             variants={itemVariants}
-            whileHover={{ y: -4 }}
+            whileHover={{ y: -8, scale: 1.02 }}
             transition={{ duration: 0.2 }}
-            className={`relative bg-[#0f0f0f]/50 backdrop-blur-xl rounded-2xl border ${pkg.popular ? 'border-white/20' : 'border-white/5'} p-6 flex flex-col gap-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]`}
+            className={`relative bg-[#0f0f0f]/50 backdrop-blur-xl rounded-2xl border ${pkg.popular ? 'border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-white/5'} p-6 flex flex-col gap-6 transition-colors group`}
           >
             {pkg.popular && (
-              <div className="absolute top-4 right-4 bg-white/10 text-white text-[10px] font-semibold uppercase tracking-wider py-1 px-2 rounded-full">
+              <motion.div
+                animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="absolute top-4 right-4 bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-semibold uppercase tracking-wider py-1 px-3 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.2)]"
+              >
                 Most Popular
-              </div>
+              </motion.div>
             )}
 
             <div className="flex items-start justify-between gap-4">
@@ -148,18 +152,25 @@ export default function Pricing() {
               <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-3">Fitur Termasuk</p>
               <ul className="space-y-2">
                 {pkg.features.map((feature, fIdx) => (
-                  <li key={fIdx} className="flex items-start gap-2 text-sm text-gray-300">
+                  <motion.li
+                    key={fIdx}
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: fIdx * 0.1, duration: 0.3 }}
+                    className="flex items-start gap-2 text-sm text-gray-300"
+                  >
                     <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
                     <span>{feature}</span>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
             </div>
 
             <button
-              className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${pkg.popular
-                  ? 'bg-white text-black hover:bg-gray-200'
-                  : 'bg-white/5 hover:bg-white/10 text-white border border-white/5'
+              className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${pkg.popular
+                ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                : 'bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10'
                 }`}
             >
               Pilih Paket

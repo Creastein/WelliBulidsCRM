@@ -1,62 +1,110 @@
-# Optimasi Dashboard Freelance CRM — WelliBuilds
+# WelliBuilds Dashboard — Upgrade Plan
 
-Dashboard pribadi untuk tracking bisnis yang sudah/belum dihubungi, dan monitor target **Rp 10.000.000 dalam 2 bulan** dari freelance web development.
-
-## Keputusan
-
-- **Persistensi**: `localStorage` untuk sekarang, backend nanti
-- **Cleanup**: Hapus `express`, `better-sqlite3`, `@google/genai`, `dotenv` (tidak terpakai)
-
-## Fase 1: Data Persistence dengan localStorage
-
-### [NEW] `src/hooks/useLocalStorage.ts`
-- Custom hook `useLocalStorage<T>(key, defaultValue)` — auto save/load state ke `localStorage`
-
-### [NEW] `src/data/dataDefaults.ts`
-- Pindahkan semua data default (KPI, pipeline, leads, milestones, weekly reviews) ke satu file terpusat
+## Status Saat Ini ✅
+- ShaderGradient + Glassmorphism
+- Sidebar (animasi, progress ring, tooltip, logo)
+- MissionControl (action items, CRM integration)
+- Finance (framer-motion, milestones, progress bars)
+- Font (Bungee Spice + Medula One)
+- Default leads dikosongkan
 
 ---
 
-## Fase 2: CRM Upgrade
+## Phase 1: Polish & UX (Prioritas Tinggi)
 
-### [MODIFY] `src/components/CRM.tsx`
-- Ganti `useState` → `useLocalStorage` agar data leads persisten
-- Tambah filter dropdown: Status, Prioritas, Niche
-- Tambah sort: Nama, Prioritas, Status
-- Tambah counter summary di atas tabel
+### 1.1 Database Prospek — Framer Motion & UX
+**File:** `src/components/DatabaseProspek.tsx`
 
----
+- [ ] Tambah stagger animation saat load (seperti Finance)
+- [ ] Animated card transitions saat filter/tab berubah
+- [ ] Improve form "Tambah Prospek" → modal animated dengan field yang lebih jelas
+- [ ] Hover effects premium pada lead cards
+- [ ] Tambah konfirmasi delete dengan animasi
 
-## Fase 3: Dashboard Dinamis
+### 1.2 Pricing Page — Visual Polish
+**File:** `src/components/Pricing.tsx`
 
-### [MODIFY] `src/components/MissionControl.tsx`
-- KPI cards → editable (klik untuk update value)
-- Pipeline status → auto-hitung dari data CRM
-- `daysRemaining` → auto-calculate dari tanggal target
-- `Last Update` → otomatis
-- Progress donut → animasi
+- [ ] Hover effect 3D tilt pada pricing cards
+- [ ] "Popular" badge animated pulse
+- [ ] Micro-interactions pada feature checklist (stagger check icons)
+- [ ] Konsistensi glassmorphism borders
 
-### [MODIFY] `src/components/Finance.tsx`
-- Weekly review → editable
-- Milestones → auto-update status dari revenue
-- Revenue input form
+### 1.3 Favicon Fix
+**File:** `index.html`, `public/favicon.ico`
 
----
+- [ ] Generate favicon dari `public/logo.png`
+- [ ] Tambahkan `<link rel="icon">` di index.html
 
-## Fase 4: Cleanup & Polish
+### 1.4 Toast Notifications
+**File:** `src/App.tsx` + komponen yang pakai save
 
-### [MODIFY] `package.json`
-- Hapus: `express`, `better-sqlite3`, `@google/genai`, `dotenv`, `@types/express`
-
-### [MODIFY] `vite.config.ts`
-- Hapus `process.env.GEMINI_API_KEY`
-
-### [MODIFY] `src/components/Sidebar.tsx`
-- Branding: "Vibe Coding" → "WelliBuilds"
+- [ ] Setup `<Toaster />` dari `react-hot-toast` (sudah installed)
+- [ ] Tambah toast saat: save KPI, tambah lead, catat revenue, edit weekly review
+- [ ] Style toast sesuai dark theme
 
 ---
 
-## Verification
+## Phase 2: Data & Visualisasi
 
-1. `npm run build` — tanpa error
-2. Browser test: persistensi data, filter CRM, edit KPI, auto-countdown
+### 2.1 Charts di Finance
+**File:** `src/components/Finance.tsx`
+**Dependency:** `recharts` (perlu install)
+
+- [ ] Line chart: tren DM per minggu
+- [ ] Bar chart: Reply & Closing per minggu
+- [ ] Area chart: Revenue kumulatif
+- [ ] Responsive + dark themed
+
+### 2.2 Export Data ke CSV
+**File:** `src/components/DatabaseProspek.tsx`, `src/components/Finance.tsx`
+
+- [ ] Tombol "Export CSV" di Database Prospek
+- [ ] Tombol "Export CSV" di Weekly Review
+- [ ] Format: nama, niche, status, action, notes
+
+---
+
+## Phase 3: Power Features
+
+### 3.1 Keyboard Shortcuts
+**File:** Baru `src/hooks/useKeyboardShortcuts.ts`
+
+- [ ] `Ctrl+N` → Tambah lead baru
+- [ ] `Ctrl+1-4` → Navigasi sidebar
+- [ ] `Esc` → Tutup modal
+- [ ] Shortcut hint di tooltip
+
+### 3.2 Mobile Responsive Audit
+**File:** Semua komponen
+
+- [ ] Test & fix sidebar collapse di mobile
+- [ ] Fix table overflow di weekly review
+- [ ] Fix card grid di pricing
+- [ ] Fix action items layout di MissionControl
+
+### 3.3 PWA (Progressive Web App)
+**File:** `vite.config.ts`, `public/manifest.json`
+**Dependency:** `vite-plugin-pwa`
+
+- [ ] Generate manifest.json
+- [ ] Setup service worker
+- [ ] Installable di HP sebagai app
+
+---
+
+## Phase 4: Performance
+
+### 4.1 Code Splitting
+**File:** `src/App.tsx`
+
+- [ ] Lazy load semua halaman dengan `React.lazy()`
+- [ ] Suspense fallback dengan skeleton/loading
+- [ ] Reduce main chunk dari 422KB
+
+---
+
+## Urutan Kerja yang Disarankan
+1. Phase 1 dulu (langsung terasa dampaknya)
+2. Phase 2 kalau mau data lebih informatif
+3. Phase 3 untuk power users
+4. Phase 4 kalau performance jadi concern

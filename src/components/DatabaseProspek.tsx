@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Info,
@@ -33,6 +33,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLocalStorage, updateLastModified } from '../hooks/useLocalStorage';
 import { DEFAULT_LEADS, DEFAULT_NICHES, STORAGE_KEYS, type Lead, type NicheCategory } from '../data/dataDefaults';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
+};
 
 const NICHE_ICONS: Record<string, React.ElementType> = {
   Building2,
@@ -106,6 +116,33 @@ export default function DatabaseProspek() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     toast.success('Database berhasil diexport!');
+  };
+
+  const buildCsvValue = (value: string | number) => {
+    const normalized = String(value ?? '').replace(/"/g, '""');
+    return `"${normalized}"`;
+  };
+
+  const handleExportCsv = () => {
+    const headers = ['nama', 'niche', 'status', 'action', 'notes'];
+    const rows = leads.map((lead) => [
+      buildCsvValue(lead.name),
+      buildCsvValue(lead.niche),
+      buildCsvValue(lead.status),
+      buildCsvValue(lead.action),
+      buildCsvValue(lead.notes),
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `wellibuilds_crm_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('CSV berhasil diexport!');
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,6 +281,35 @@ export default function DatabaseProspek() {
     setEditingId(null);
   };
 
+  useEffect(() => {
+    const handleNewLead = () => handleOpenModal();
+    const handleEscape = () => {
+      if (isModalOpen) handleCloseModal();
+    };
+
+    window.addEventListener('wb:new-lead', handleNewLead);
+    window.addEventListener('wb:escape', handleEscape);
+
+    return () => {
+      window.removeEventListener('wb:new-lead', handleNewLead);
+      window.removeEventListener('wb:escape', handleEscape);
+    };
+  }, [isModalOpen, handleOpenModal, handleCloseModal]);
+
+  useEffect(() => {
+    const handleNewLead = () => handleOpenModal();
+    const handleEscape = () => {
+      if (isModalOpen) handleCloseModal();
+    };
+
+    window.addEventListener('wb:new-lead', handleNewLead as EventListener);
+    window.addEventListener('wb:escape', handleEscape as EventListener);
+    return () => {
+      window.removeEventListener('wb:new-lead', handleNewLead as EventListener);
+      window.removeEventListener('wb:escape', handleEscape as EventListener);
+    };
+  }, [isModalOpen, activeTab]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
@@ -287,7 +353,7 @@ export default function DatabaseProspek() {
             <Database size={20} />
             <span className="font-mono text-sm tracking-wider uppercase font-semibold">Tracking</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Database Prospek</h1>
+          <h1 className="text-3xl md:text-4xl font-display tracking-tight text-white">Database Prospek</h1>
           <p className="text-gray-400 mt-2 font-mono text-sm">
             {leads.length} total prospek · {leads.filter((l) => l.status === 'Belum Dihubungi').length} belum dihubungi
           </p>
@@ -313,6 +379,13 @@ export default function DatabaseProspek() {
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-300 hover:text-white bg-[#111] hover:bg-[#222] border border-[#333] rounded-lg transition-colors"
+              title="Export CSV"
+            >
+              CSV
+            </button>
             <button
               onClick={handleExport}
               className="p-2 text-gray-400 hover:text-white bg-[#111] hover:bg-[#222] border border-[#333] rounded-lg transition-colors"
@@ -399,10 +472,10 @@ export default function DatabaseProspek() {
         {activeTab === 'ringkasan' && (
           <motion.div
             key="ringkasan"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
             className="space-y-6"
           >
             {/* Niche Overview Cards */}
@@ -415,9 +488,10 @@ export default function DatabaseProspek() {
                 return (
                   <motion.div
                     key={niche.id}
+                    variants={itemVariants}
                     onClick={() => setActiveTab(niche.id)}
-                    whileHover={{ y: -2 }}
-                    className="bg-[#111]/50 backdrop-blur-xl border border-white/5 hover:border-orange-500/30 rounded-xl p-5 cursor-pointer group transition-colors"
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    className="bg-[#111]/50 backdrop-blur-xl border border-white/5 hover:border-orange-500/30 rounded-xl p-5 cursor-pointer group transition-all shadow-lg hover:shadow-orange-500/10"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -464,26 +538,26 @@ export default function DatabaseProspek() {
 
             {/* Global summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center">
+              <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
                 <p className="text-3xl font-mono font-bold text-white">{leads.length}</p>
                 <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1">Total Prospek</p>
-              </div>
-              <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center">
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
                 <p className="text-3xl font-mono font-bold text-orange-400">
                   {leads.filter((l) => l.status === 'Belum Dihubungi').length}
                 </p>
                 <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1">Belum Dihubungi</p>
-              </div>
-              <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center">
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
                 <p className="text-3xl font-mono font-bold text-blue-400">
                   {leads.filter((l) => ['Dihubungi', 'Follow Up', 'Negosiasi'].includes(l.status)).length}
                 </p>
                 <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1">Dalam Proses</p>
-              </div>
-              <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center">
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
                 <p className="text-3xl font-mono font-bold text-emerald-400">{leads.filter((l) => l.status === 'Deal').length}</p>
                 <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mt-1">Deal / Closing</p>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
@@ -571,9 +645,14 @@ export default function DatabaseProspek() {
                       <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Kelola</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#222]">
+                  <motion.tbody
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="divide-y divide-[#222]"
+                  >
                     {processedLeads.length === 0 ? (
-                      <tr>
+                      <motion.tr variants={itemVariants}>
                         <td colSpan={6} className="p-12 text-center">
                           <div className="flex justify-center mb-4">
                             {(() => {
@@ -589,10 +668,10 @@ export default function DatabaseProspek() {
                             + Tambah prospek pertama
                           </button>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ) : (
                       processedLeads.map((lead) => (
-                        <tr key={lead.id} className="hover:bg-white/5 transition-colors group">
+                        <motion.tr variants={itemVariants} key={lead.id} className="hover:bg-white/5 transition-colors group">
                           <td className="p-4">
                             <p className="font-medium text-gray-200">{lead.name}</p>
                           </td>
@@ -655,10 +734,10 @@ export default function DatabaseProspek() {
                               </button>
                             </div>
                           </td>
-                        </tr>
+                        </motion.tr>
                       ))
                     )}
-                  </tbody>
+                  </motion.tbody>
                 </table>
               </div>
             </div>
