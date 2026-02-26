@@ -1,4 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
 const Sidebar = lazy(() => import('./components/Sidebar'));
 const MissionControl = lazy(() => import('./components/MissionControl'));
 const DatabaseProspek = lazy(() => import('./components/DatabaseProspek'));
@@ -61,7 +62,12 @@ export default function App() {
       </Suspense>
 
       {/* App Content */}
-      <div className="relative z-10 flex w-full h-full">
+      <motion.div
+        className="relative z-10 flex w-full h-full"
+        initial={{ opacity: 0, scale: 0.95, y: 10, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.8, delay: 2.6, ease: [0.16, 1, 0.3, 1] }}
+      >
         <Suspense fallback={<div className="hidden md:block w-[68px] sm:w-64 h-full bg-[#0a0a0a]/40 border-r border-white/5 animate-pulse" />}>
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </Suspense>
@@ -75,7 +81,7 @@ export default function App() {
           </Suspense>
           <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>
-      </div>
+      </motion.div>
     </div>
   );
 }
