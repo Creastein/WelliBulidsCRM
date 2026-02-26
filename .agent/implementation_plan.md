@@ -101,10 +101,22 @@
 - [ ] Suspense fallback dengan skeleton/loading
 - [ ] Reduce main chunk dari 422KB
 
+## Phase 5: Cinematic Premium Initial Load
+**File:** `src/components/CinematicLoader.tsx` (Baru), `src/App.tsx`
+
+**Konsep (Premium, Dark, Clean, Tidak Norak):**
+- Menggantikan skeleton biasa menjadi full-screen "Curtain Reveal".
+- **Visuals**: Background solid `#0a0a0a` dengan _subtle radial glow_ warna amber/gold di tengah yang sangat tipis.
+- **Line Drawing**: Animasi SVG `stroke` (garis) melukis ikon geometris perlahan.
+- **Typography Reveal**: Teks "WelliBuilds" muncul dari bawah (*masking/clip-path*) dengan teks *Tracking* (letter-spacing) yang perlahan melebar.
+- **Minimalist Progress**: Angka persentase kecil (Font Mono) berkedip/menghitung cepat di pojok kanan bawah, atau garis rambut emas di dasar layar.
+- **Exit**: Saat selesai (`Suspense` load tuntas), layar akan _scale-up_ sedikit dan _fade out_ perlahan ke dashboard, tidak hilang tiba-tiba.
+
 ---
 
 ## Urutan Kerja yang Disarankan
-1. Phase 1 dulu (langsung terasa dampaknya)
-2. Phase 2 kalau mau data lebih informatif
-3. Phase 3 untuk power users
-4. Phase 4 kalau performance jadi concern
+1. Phase 1 dulu (langsung terasa dampaknya) ✅
+2. Phase 2 kalau mau data lebih informatif ✅
+3. Phase 3 untuk power users ✅
+4. Phase 4 untuk performance ✅
+5. **Phase 5 untuk memberikan "Wow Factor" saat aplikasi pertama kali dibuka** (Saat ini)

@@ -40,10 +40,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
   return (
     <aside
-      className={`bg-[#0a0a0a]/40 backdrop-blur-xl border-r border-white/5 flex flex-col h-full shrink-0 transition-[width] duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-[68px]'}`}
+      className={`bg-[#0a0a0a]/90 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out z-50
+        fixed bottom-0 left-0 right-0 h-16 border-t border-white/5 flex flex-row
+        md:bg-[#0a0a0a]/40 md:relative md:flex-col md:h-full md:border-t-0 md:border-r 
+        ${isOpen ? 'md:w-64' : 'md:w-[68px]'}`}
     >
       {/* Branding */}
-      <div className={`border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
+      <div className={`hidden md:block border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
         <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
           <div className="relative shrink-0">
             <img
@@ -112,14 +115,14 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 space-y-1 ${isOpen ? 'p-3' : 'p-2'}`}>
+      <nav className={`flex-1 flex flex-row items-center justify-around w-full p-2 md:flex-col md:justify-start md:space-y-1 ${isOpen ? 'md:p-3' : 'md:p-2'}`}>
         <AnimatePresence>
           {isOpen && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3"
+              className="hidden md:block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3"
             >
               Menu
             </motion.p>
@@ -129,11 +132,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
-            <div key={item.id} className="relative group">
+            <div key={item.id} className="relative group flex items-center justify-center">
               <button
                 onClick={() => setActiveTab(item.id)}
-                className={`relative w-full flex items-center rounded-lg transition-all duration-200 ${isOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5'
-                  } ${isActive
+                className={`relative flex items-center justify-center rounded-lg transition-all duration-200 
+                  w-12 h-12 md:w-full md:h-auto
+                  ${isOpen ? 'md:justify-start md:gap-3 md:px-3 md:py-2.5' : 'md:justify-center md:px-2 md:py-2.5'} 
+                  ${isActive
                     ? 'text-orange-400'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
@@ -147,11 +152,20 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   />
                 )}
 
-                {/* Animated active glow bar */}
+                {/* Animated active glow bar (Desktop only) */}
                 {isActive && (
                   <motion.div
                     layoutId="activeGlowBar"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                    className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+
+                {/* Animated active glow bar (Mobile only) */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeGlowBarMobile"
+                    className="md:hidden absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -163,7 +177,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="relative z-10 font-medium text-sm"
+                      className="hidden md:block relative z-10 font-medium text-sm"
                     >
                       {item.label}
                     </motion.span>
@@ -171,21 +185,28 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 </AnimatePresence>
               </button>
 
-              {/* Tooltip on collapse */}
-              {!isOpen && (
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1a1a1a]/90 backdrop-blur-sm border border-white/10 text-white text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50">
-                  <span>{item.label}</span>
-                  <span className="ml-2 text-[10px] font-mono text-gray-400">{item.shortcut}</span>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
-                </div>
-              )}
+              {/* Tooltip on hover */}
+              <div className={`absolute pointer-events-none px-2.5 py-1.5 bg-[#1a1a1a]/90 backdrop-blur-sm border border-white/10 text-white text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50
+                  bottom-full left-1/2 -translate-x-1/2 mb-2
+                  md:bottom-auto md:left-full md:top-1/2 md:-translate-y-1/2 md:-translate-x-0 md:ml-2
+                  ${isOpen ? 'md:hidden' : ''}
+                `}>
+                <span>{item.label}</span>
+                <span className="hidden md:inline ml-2 text-[10px] font-mono text-gray-400">{item.shortcut}</span>
+
+                {/* Arrow Mobile */}
+                <div className="md:hidden absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-t-[5px] border-t-[#1a1a1a]/90 border-r-[5px] border-r-transparent" />
+
+                {/* Arrow Desktop */}
+                <div className="hidden md:block absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
+              </div>
             </div>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className={`border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
+      <div className={`hidden md:block border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
         {/* Collapse toggle */}
         <button
           type="button"

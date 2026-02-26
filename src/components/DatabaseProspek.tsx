@@ -296,19 +296,7 @@ export default function DatabaseProspek() {
     };
   }, [isModalOpen, handleOpenModal, handleCloseModal]);
 
-  useEffect(() => {
-    const handleNewLead = () => handleOpenModal();
-    const handleEscape = () => {
-      if (isModalOpen) handleCloseModal();
-    };
 
-    window.addEventListener('wb:new-lead', handleNewLead as EventListener);
-    window.addEventListener('wb:escape', handleEscape as EventListener);
-    return () => {
-      window.removeEventListener('wb:new-lead', handleNewLead as EventListener);
-      window.removeEventListener('wb:escape', handleEscape as EventListener);
-    };
-  }, [isModalOpen, activeTab]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

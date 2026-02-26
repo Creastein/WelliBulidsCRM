@@ -1,16 +1,27 @@
 import React, { useState, lazy, Suspense } from 'react';
-import Sidebar from './components/Sidebar';
-import MissionControl from './components/MissionControl';
-import DatabaseProspek from './components/DatabaseProspek';
-import Finance from './components/Finance';
-import Pricing from './components/Pricing';
+const Sidebar = lazy(() => import('./components/Sidebar'));
+const MissionControl = lazy(() => import('./components/MissionControl'));
+const DatabaseProspek = lazy(() => import('./components/DatabaseProspek'));
+const Finance = lazy(() => import('./components/Finance'));
+const Pricing = lazy(() => import('./components/Pricing'));
 import { Toaster } from 'react-hot-toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import CinematicLoader from './components/CinematicLoader';
 
 const GradientBackground = lazy(() => import('./components/GradientBackground'));
 
+const FallbackLoader = () => (
+  <div className="flex-1 flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
+      <p className="text-sm font-mono text-gray-500 animate-pulse">Loading module...</p>
+    </div>
+  </div>
+);
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('mission-control');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Keyboard Shortcuts Setup
   useKeyboardShortcuts({
@@ -29,6 +40,8 @@ export default function App() {
 
   return (
     <div className="relative flex h-screen text-white font-sans selection:bg-orange-500/30 overflow-hidden">
+      {isInitialLoading && <CinematicLoader onComplete={() => setIsInitialLoading(false)} />}
+
       <Toaster
         position="top-right"
         toastOptions={{
@@ -49,13 +62,17 @@ export default function App() {
 
       {/* App Content */}
       <div className="relative z-10 flex w-full h-full">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Suspense fallback={<div className="hidden md:block w-[68px] sm:w-64 h-full bg-[#0a0a0a]/40 border-r border-white/5 animate-pulse" />}>
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Suspense>
 
-        <main className="flex-1 overflow-y-auto">
-          {activeTab === 'mission-control' && <MissionControl />}
-          {activeTab === 'crm' && <DatabaseProspek />}
-          {activeTab === 'finance' && <Finance />}
-          {activeTab === 'pricing' && <Pricing />}
+        <main className="flex-1 overflow-y-auto w-full pb-16 md:pb-0">
+          <Suspense fallback={<FallbackLoader />}>
+            {activeTab === 'mission-control' && <MissionControl />}
+            {activeTab === 'crm' && <DatabaseProspek />}
+            {activeTab === 'finance' && <Finance />}
+            {activeTab === 'pricing' && <Pricing />}
+          </Suspense>
           <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>
       </div>
