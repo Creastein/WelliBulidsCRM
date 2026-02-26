@@ -1,5 +1,8 @@
-import React from 'react';
-import { LayoutDashboard, Users, LineChart, Tag, LogOut, Code2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { LayoutDashboard, Users, LineChart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { DEFAULT_PROGRESS, STORAGE_KEYS, type ProgressData } from '../data/dataDefaults';
 
 interface SidebarProps {
   activeTab: string;
@@ -7,52 +10,179 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+  const [isOpen, setIsOpen] = React.useState(true);
+  const [progressData] = useLocalStorage<ProgressData>(STORAGE_KEYS.PROGRESS, DEFAULT_PROGRESS);
+
+  const progressPercent = useMemo(() => {
+    if (progressData.target <= 0) return 0;
+    return Math.min(100, Math.round((progressData.current / progressData.target) * 100));
+  }, [progressData.current, progressData.target]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+
   const navItems = [
     { id: 'mission-control', label: 'Mission Control', icon: LayoutDashboard },
-    { id: 'crm', label: 'CRM & Leads', icon: Users },
+    { id: 'crm', label: 'Database Prospek', icon: Users },
     { id: 'finance', label: 'Finance & Perf.', icon: LineChart },
     { id: 'pricing', label: 'Pricing Packages', icon: Tag },
   ];
 
   return (
-    <aside className="w-64 bg-[#0a0a0a] border-r border-[#222] flex flex-col h-full shrink-0">
-      <div className="p-6 border-b border-[#222]">
-        <div className="flex items-center gap-3 text-orange-500">
-          <div className="bg-orange-500/10 p-2 rounded-lg border border-orange-500/20">
-            <Code2 size={24} />
+    <aside
+      className={`bg-[#0a0a0a]/40 backdrop-blur-xl border-r border-white/5 flex flex-col h-full shrink-0 transition-[width] duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-[68px]'}`}
+    >
+      {/* Branding */}
+      <div className={`border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
+        <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
+          <div className="relative shrink-0">
+            <img
+              src="/logo.png"
+              alt="WelliBuilds"
+              className={`rounded-xl object-contain transition-all duration-300 ${isOpen ? 'w-14 h-14' : 'w-11 h-11'}`}
+            />
+            {/* Subtle glow behind logo */}
+            <div className="absolute inset-0 rounded-xl bg-orange-500/20 blur-md -z-10" />
           </div>
-          <div>
-            <h1 className="font-bold text-white tracking-tight leading-tight">Vibe Coding</h1>
-            <p className="text-[10px] font-mono text-orange-400 uppercase tracking-widest">Workspace</p>
-          </div>
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <h1 className="font-bold text-white tracking-tight leading-tight text-[15px]">WelliBuilds</h1>
+                <p className="text-[9px] font-mono text-orange-400/80 uppercase tracking-[0.2em]">Freelance Dashboard</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Mini Progress Ring */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4 flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2.5 border border-white/5"
+            >
+              {/* SVG Ring */}
+              <div className="relative w-9 h-9 shrink-0">
+                <svg className="w-9 h-9 -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="14" fill="none"
+                    stroke="url(#progressGradient)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={`${progressPercent * 0.88} ${88 - progressPercent * 0.88}`}
+                    className="transition-all duration-1000"
+                  />
+                  <defs>
+                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-mono font-bold text-white">
+                  {progressPercent}%
+                </span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Target</p>
+                <p className="text-xs font-mono text-white truncate">{formatCurrency(progressData.current)}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-3">Main Menu</p>
+      {/* Navigation */}
+      <nav className={`flex-1 space-y-1 ${isOpen ? 'p-3' : 'p-2'}`}>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3"
+            >
+              Menu
+            </motion.p>
+          )}
+        </AnimatePresence>
+
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
-                  : 'text-gray-400 hover:text-white hover:bg-[#111] border border-transparent'
-              }`}
-            >
-              <item.icon size={18} className={isActive ? 'text-orange-500' : 'text-gray-500'} />
-              <span className="font-medium text-sm">{item.label}</span>
-            </button>
+            <div key={item.id} className="relative group">
+              <button
+                onClick={() => setActiveTab(item.id)}
+                className={`relative w-full flex items-center rounded-lg transition-all duration-200 ${isOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5'
+                  } ${isActive
+                    ? 'text-orange-400'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                {/* Animated active background */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNavBg"
+                    className="absolute inset-0 bg-orange-500/10 border border-orange-500/20 rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.08)]"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+
+                {/* Animated active glow bar */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeGlowBar"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+
+                <item.icon size={18} className={`relative z-10 transition-colors ${isActive ? 'text-orange-500' : 'text-gray-500 group-hover:text-gray-300'}`} />
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="relative z-10 font-medium text-sm"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+
+              {/* Tooltip on collapse */}
+              {!isOpen && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1a1a1a]/90 backdrop-blur-sm border border-white/10 text-white text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50">
+                  {item.label}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#222]">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 hover:text-white hover:bg-[#111] transition-colors">
-          <LogOut size={18} />
-          <span className="font-medium text-sm">Logout</span>
+      {/* Footer */}
+      <div className={`border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
+        {/* Collapse toggle */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          className={`w-full flex items-center justify-center rounded-lg border border-white/5 bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-colors py-2`}
+        >
+          {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
         </button>
       </div>
     </aside>
