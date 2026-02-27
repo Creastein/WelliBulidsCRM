@@ -27,13 +27,14 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { useLocalStorage, updateLastModified } from '../hooks/useLocalStorage';
+import { fetchLeads } from '../services/leadsService';
+import { fetchWeeklyReviews, upsertWeeklyReview } from '../services/weeklyReviewService';
+import { fetchProgress, saveProgress } from '../services/progressService';
 import {
   DEFAULT_WEEKLY_REVIEWS,
   DEFAULT_MILESTONES,
   DEFAULT_PROGRESS,
   DEFAULT_LEADS,
-  STORAGE_KEYS,
   type WeeklyReview,
   type ProgressData,
   type Lead,
@@ -53,12 +54,19 @@ const itemVariants = {
 };
 
 export default function Finance() {
-  const [weeklyReviews, setWeeklyReviews] = useLocalStorage<WeeklyReview[]>(
-    STORAGE_KEYS.WEEKLY_REVIEWS,
-    DEFAULT_WEEKLY_REVIEWS
-  );
-  const [progressData, setProgressData] = useLocalStorage<ProgressData>(STORAGE_KEYS.PROGRESS, DEFAULT_PROGRESS);
-  const [leads] = useLocalStorage<Lead[]>(STORAGE_KEYS.LEADS, DEFAULT_LEADS);
+  const [weeklyReviews, setWeeklyReviews] = useState<WeeklyReview[]>(DEFAULT_WEEKLY_REVIEWS);
+  const [progressData, setProgressData] = useState<ProgressData>(DEFAULT_PROGRESS);
+  const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
+
+  // Fetch semua data dari Supabase saat mount
+  useEffect(() => {
+    fetchWeeklyReviews().then((data) => {
+      if (data.length > 0) setWeeklyReviews(data);
+    }).catch(() => {/* silent, pakai default */ });
+
+    fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => { });
+    fetchLeads().then(setLeads).catch(() => { });
+  }, []);
 
   // Editing state for weekly review
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
@@ -130,11 +138,9 @@ export default function Finance() {
     );
   }, [weeklyReviews]);
 
-  // Prepare chart data (cumulative revenue + reverse order for chronological display)
+  // Prepare chart data
   const chartData = useMemo(() => {
-    // Sort ascending by week for chronological display
     const sortedWeeks = [...weeklyReviews].sort((a, b) => a.week - b.week);
-
     let cumulative = 0;
     return sortedWeeks.map(w => {
       cumulative += w.revenue;
@@ -151,13 +157,17 @@ export default function Finance() {
     setEditForm({ ...week });
   };
 
-  const saveWeek = () => {
+  const saveWeek = async () => {
     if (!editForm) return;
-    setWeeklyReviews(weeklyReviews.map((w) => (w.week === editingWeek ? editForm : w)));
-    updateLastModified();
+    try {
+      await upsertWeeklyReview(editForm);
+      setWeeklyReviews(weeklyReviews.map((w) => (w.week === editingWeek ? editForm : w)));
+      toast.success('Review mingguan disimpan!');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan review');
+    }
     setEditingWeek(null);
     setEditForm(null);
-    toast.success('Review mingguan disimpan!');
   };
 
   const cancelEditWeek = () => {
@@ -165,15 +175,20 @@ export default function Finance() {
     setEditForm(null);
   };
 
-  const addRevenue = () => {
+  const addRevenue = async () => {
     const amount = Number(revenueAmount);
     if (isNaN(amount) || amount <= 0) return;
-    setProgressData({ ...progressData, current: progressData.current + amount });
-    updateLastModified();
+    const updatedProgress = { ...progressData, current: progressData.current + amount };
+    setProgressData(updatedProgress);
+    try {
+      await saveProgress(updatedProgress);
+      toast.success(`Revenue Rp ${amount.toLocaleString('id-ID')} dicatat!`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
+    }
     setRevenueAmount('');
     setRevenueNote('');
     setShowRevenueModal(false);
-    toast.success(`Revenue Rp ${amount.toLocaleString('id-ID')} dicatat!`);
   };
 
   useEffect(() => {
@@ -205,8 +220,8 @@ export default function Finance() {
             <LineChart size={20} />
             <span className="font-mono text-sm tracking-wider uppercase font-semibold">Performance</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-display tracking-tight text-white">Finance & Review</h1>
-          <p className="text-gray-400 mt-2 font-mono text-sm">Monitor Cashflow & Sistem Koreksi Mingguan</p>
+          <h1 className="text-3xl md:text-4xl font-display tracking-tight text-white">Finance &amp; Review</h1>
+          <p className="text-gray-400 mt-2 font-mono text-sm">Monitor Cashflow &amp; Sistem Koreksi Mingguan</p>
 
           {/* Progress bar toward target */}
           <div className="mt-4 max-w-md">

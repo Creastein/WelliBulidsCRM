@@ -21,12 +21,13 @@ import {
   Flame,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useLocalStorage, updateLastModified, getLastModified } from '../hooks/useLocalStorage';
+import { fetchLeads } from '../services/leadsService';
+import { fetchKpi, upsertAllKpi } from '../services/kpiService';
+import { fetchProgress, saveProgress } from '../services/progressService';
 import {
   DEFAULT_KPI,
   DEFAULT_LEADS,
   DEFAULT_PROGRESS,
-  STORAGE_KEYS,
   type KpiItem,
   type Lead,
   type ProgressData,
@@ -48,9 +49,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [kpiData, setKpiData] = useLocalStorage<KpiItem[]>(STORAGE_KEYS.KPI, DEFAULT_KPI);
-  const [leads] = useLocalStorage<Lead[]>(STORAGE_KEYS.LEADS, DEFAULT_LEADS);
-  const [progressData, setProgressData] = useLocalStorage<ProgressData>(STORAGE_KEYS.PROGRESS, DEFAULT_PROGRESS);
+  const [kpiData, setKpiData] = useState<KpiItem[]>(DEFAULT_KPI);
+  const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
+  const [progressData, setProgressData] = useState<ProgressData>(DEFAULT_PROGRESS);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   // Edit state for KPI
   const [editingKpi, setEditingKpi] = useState<string | null>(null);
@@ -59,6 +61,23 @@ export default function Dashboard() {
   // Edit state for revenue
   const [editingRevenue, setEditingRevenue] = useState(false);
   const [revenueInput, setRevenueInput] = useState('');
+
+  // Fetch data dari Supabase saat mount
+  useEffect(() => {
+    fetchKpi().then((rows) => {
+      if (rows.length > 0) {
+        setKpiData((prev) =>
+          prev.map((k) => {
+            const found = rows.find((r: { key: string; value: number; target: number }) => r.key === k.key);
+            return found ? { ...k, value: Number(found.value), target: Number(found.target) } : k;
+          })
+        );
+      }
+    }).catch(() => {/* silent, pakai default */ });
+
+    fetchLeads().then(setLeads).catch(() => {/* silent */ });
+    fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => {/* silent */ });
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -117,11 +136,10 @@ export default function Dashboard() {
 
   // Last modified display
   const lastModifiedText = useMemo(() => {
-    const lm = getLastModified();
-    if (!lm) return 'Belum ada update';
-    const date = new Date(lm);
+    if (!lastSaved) return 'Belum ada update';
+    const date = new Date(lastSaved);
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }, [kpiData, progressData, leads]);
+  }, [lastSaved]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -137,21 +155,30 @@ export default function Dashboard() {
     setEditValue(String(kpi.value));
   };
 
-  const saveKpi = () => {
+  const saveKpi = async () => {
     if (editingKpi === null) return;
     const numValue = Number(editValue);
     if (isNaN(numValue)) return;
 
-    setKpiData(kpiData.map((kpi) => (kpi.key === editingKpi ? { ...kpi, value: numValue } : kpi)));
+    const updatedKpi = kpiData.map((kpi) => (kpi.key === editingKpi ? { ...kpi, value: numValue } : kpi));
+    setKpiData(updatedKpi);
 
     // If editing revenue KPI, sync with progress
+    let updatedProgress = progressData;
     if (editingKpi === 'revenue') {
-      setProgressData({ ...progressData, current: numValue });
+      updatedProgress = { ...progressData, current: numValue };
+      setProgressData(updatedProgress);
     }
 
-    updateLastModified();
+    try {
+      await upsertAllKpi(updatedKpi);
+      if (editingKpi === 'revenue') await saveProgress(updatedProgress);
+      setLastSaved(new Date().toISOString());
+      toast.success('KPI diperbarui!');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan KPI');
+    }
     setEditingKpi(null);
-    toast.success('KPI diperbarui!');
   };
 
   const cancelEditKpi = () => {
@@ -160,15 +187,22 @@ export default function Dashboard() {
   };
 
   // Revenue edit handlers
-  const saveRevenue = () => {
+  const saveRevenue = async () => {
     const numValue = Number(revenueInput);
     if (isNaN(numValue)) return;
-    setProgressData({ ...progressData, current: numValue });
-    // Sync revenue KPI
-    setKpiData(kpiData.map((kpi) => (kpi.key === 'revenue' ? { ...kpi, value: numValue } : kpi)));
-    updateLastModified();
+    const updatedProgress = { ...progressData, current: numValue };
+    const updatedKpi = kpiData.map((kpi) => (kpi.key === 'revenue' ? { ...kpi, value: numValue } : kpi));
+    setProgressData(updatedProgress);
+    setKpiData(updatedKpi);
+    try {
+      await saveProgress(updatedProgress);
+      await upsertAllKpi(updatedKpi);
+      setLastSaved(new Date().toISOString());
+      toast.success('Revenue diperbarui!');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
+    }
     setEditingRevenue(false);
-    toast.success('Target Revenue diperbarui!');
   };
 
   const priorityBadge = (priority: string) => {
@@ -370,27 +404,27 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       className={`bg-[#111]/50 backdrop-blur-xl border ${config.borderColor} rounded-xl p-4 hover:bg-white/5 transition-colors group`}
                     >
-                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                         <div className="min-w-0 flex-1">
-                           <div className="flex items-center gap-2 mb-1">
-                             <p className="font-medium text-white text-sm truncate">{lead.name}</p>
-                             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${priorityBadge(lead.priority)}`}>
-                               {lead.priority}
-                             </span>
-                           </div>
-                           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                             <span>{lead.niche}</span>
-                             <span>•</span>
-                             <span>{lead.location}</span>
-                           </div>
-                         </div>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-white text-sm truncate">{lead.name}</p>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${priorityBadge(lead.priority)}`}>
+                              {lead.priority}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                            <span>{lead.niche}</span>
+                            <span>•</span>
+                            <span>{lead.location}</span>
+                          </div>
+                        </div>
 
-                         <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end mt-2 sm:mt-0">
-                           <div className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bgColor} ${config.color} flex items-center gap-1.5`}>
-                             <ArrowRight size={12} />
-                             {lead.action}
-                           </div>
-                         </div>
+                        <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end mt-2 sm:mt-0">
+                          <div className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bgColor} ${config.color} flex items-center gap-1.5`}>
+                            <ArrowRight size={12} />
+                            {lead.action}
+                          </div>
+                        </div>
                       </div>
 
                       {lead.notes && (

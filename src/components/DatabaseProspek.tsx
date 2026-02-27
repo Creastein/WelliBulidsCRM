@@ -31,8 +31,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { useLocalStorage, updateLastModified } from '../hooks/useLocalStorage';
-import { DEFAULT_LEADS, DEFAULT_NICHES, STORAGE_KEYS, type Lead, type NicheCategory } from '../data/dataDefaults';
+import { fetchLeads, createLead, updateLead, deleteLead } from '../services/leadsService';
+import { DEFAULT_NICHES, type Lead, type NicheCategory } from '../data/dataDefaults';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -82,7 +82,17 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DatabaseProspek() {
-  const [leads, setLeads] = useLocalStorage<Lead[]>(STORAGE_KEYS.LEADS, DEFAULT_LEADS);
+  const [leads, setLeads] = React.useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  // Load leads dari Supabase saat pertama kali mount
+  React.useEffect(() => {
+    setIsLoading(true);
+    fetchLeads()
+      .then(setLeads)
+      .catch((err) => toast.error(err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('ringkasan');
   const [sortField, setSortField] = useState<SortField>('priority');
@@ -155,7 +165,6 @@ export default function DatabaseProspek() {
         const importedData = JSON.parse(event.target?.result as string);
         if (Array.isArray(importedData)) {
           setLeads(importedData);
-          updateLastModified();
           toast.success(`Berhasil import ${importedData.length} prospek!`);
         } else {
           toast.error('Format file tidak valid!');
@@ -298,25 +307,33 @@ export default function DatabaseProspek() {
 
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      setLeads(leads.map((l) => (l.id === editingId ? { ...formData, id: editingId } : l)));
-      toast.success('Perubahan berhasil disimpan');
-    } else {
-      const newId = leads.length > 0 ? Math.max(...leads.map((l) => l.id)) + 1 : 1;
-      setLeads([{ ...formData, id: newId }, ...leads]);
-      toast.success('Prospek baru ditambahkan');
+    try {
+      if (editingId) {
+        await updateLead(editingId, formData);
+        setLeads(leads.map((l) => (l.id === editingId ? { ...formData, id: editingId } : l)));
+        toast.success('Perubahan berhasil disimpan');
+      } else {
+        const newLead = await createLead(formData);
+        setLeads([newLead, ...leads]);
+        toast.success('Prospek baru ditambahkan');
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan data');
     }
-    updateLastModified();
     handleCloseModal();
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Hapus prospek ini dari database?')) {
-      setLeads(leads.filter((l) => l.id !== id));
-      updateLastModified();
-      toast.error('Prospek dihapus');
+      try {
+        await deleteLead(id);
+        setLeads(leads.filter((l) => l.id !== id));
+        toast.error('Prospek dihapus');
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Gagal menghapus data');
+      }
     }
   };
 
@@ -343,7 +360,11 @@ export default function DatabaseProspek() {
           </div>
           <h1 className="text-3xl md:text-4xl font-display tracking-tight text-white">Database Prospek</h1>
           <p className="text-gray-400 mt-2 font-mono text-sm">
-            {leads.length} total prospek · {leads.filter((l) => l.status === 'Belum Dihubungi').length} belum dihubungi
+            {isLoading ? (
+              <span className="animate-pulse">Memuat data...</span>
+            ) : (
+              <>{leads.length} total prospek · {leads.filter((l) => l.status === 'Belum Dihubungi').length} belum dihubungi</>
+            )}
           </p>
         </div>
 
