@@ -45,6 +45,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
   'Follow Up': { label: 'Perlu Follow Up', color: 'text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20', icon: Flame },
   'Negosiasi': { label: 'Sedang Negosiasi', color: 'text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20', icon: Handshake },
   'Dihubungi': { label: 'Sudah Dihubungi', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', borderColor: 'border-cyan-500/20', icon: Phone },
+  'Deal': { label: 'Deal / Closing', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20', icon: Handshake },
 };
 
 export default function Dashboard() {
@@ -58,9 +59,30 @@ export default function Dashboard() {
   const [editingKpi, setEditingKpi] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  // Active tab for Action Items
+  const [activeStatusTab, setActiveStatusTab] = useState<string>('Semua');
+
   // Edit state for revenue
   const [editingRevenue, setEditingRevenue] = useState(false);
   const [revenueInput, setRevenueInput] = useState('');
+
+  // Computed KPI data based on leads
+  const computedKpiData = useMemo(() => {
+    // Total DM Terkirim = semua prospek di database (setiap lead = 1 DM terkirim)
+    const dmCount = leads.length;
+    // Total Reply = leads yang sudah merespon (Follow Up, Negosiasi, Deal, Ditolak)
+    const replyStatuses = ['Follow Up', 'Negosiasi', 'Deal', 'Ditolak'];
+    const replyCount = leads.filter(l => replyStatuses.includes(l.status)).length;
+    // Closing = leads yang sudah deal
+    const closingCount = leads.filter(l => l.status === 'Deal').length;
+
+    return kpiData.map(kpi => {
+      if (kpi.key === 'dm_sent') return { ...kpi, value: dmCount };
+      if (kpi.key === 'total_reply') return { ...kpi, value: replyCount };
+      if (kpi.key === 'closing') return { ...kpi, value: closingCount };
+      return kpi; // Untuk 'revenue', nilainya tetap manual
+    });
+  }, [kpiData, leads]);
 
   // Fetch data dari Supabase saat mount
   useEffect(() => {
@@ -87,7 +109,7 @@ export default function Dashboard() {
   // Actionable leads grouped by status (only statuses that need action)
   const actionableLeads = useMemo(() => {
     const groups: Record<string, Lead[]> = {};
-    const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi'];
+    const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi', 'Deal'];
 
     actionStatuses.forEach((status) => {
       const filtered = leads.filter((l) => l.status === status);
@@ -151,6 +173,7 @@ export default function Dashboard() {
 
   // KPI Edit handlers
   const startEditKpi = (kpi: KpiItem) => {
+    if (kpi.key !== 'revenue') return;
     setEditingKpi(kpi.key);
     setEditValue(String(kpi.value));
   };
@@ -275,12 +298,12 @@ export default function Dashboard() {
           <Activity size={18} className="text-gray-400" />
           <h2 className="text-lg font-heading text-gray-200">KPI Metrics</h2>
           <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5 ml-2">
-            Klik angka untuk edit
+            Klik angka revenue untuk edit
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpiData.map((kpi) => {
+          {computedKpiData.map((kpi) => {
             const IconComponent = ICON_MAP[kpi.iconName] || Target;
             const progress = kpi.target > 0 ? Math.min(100, (kpi.value / kpi.target) * 100) : 0;
             const isEditing = editingKpi === kpi.key;
@@ -294,7 +317,7 @@ export default function Dashboard() {
                   <div className={`p-3 rounded-lg ${kpi.bg}`}>
                     <IconComponent size={24} className={kpi.color} />
                   </div>
-                  {!isEditing && (
+                  {!isEditing && kpi.key === 'revenue' && (
                     <button
                       onClick={() => startEditKpi(kpi)}
                       className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
@@ -329,7 +352,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <p
-                      className="text-3xl font-mono font-bold text-white mb-2 cursor-pointer hover:text-orange-400 transition-colors"
+                      className={`text-3xl font-mono font-bold text-white mb-2 transition-colors ${kpi.key === 'revenue' ? 'cursor-pointer hover:text-orange-400' : ''}`}
                       onClick={() => startEditKpi(kpi)}
                     >
                       {kpi.key === 'revenue' ? formatCurrency(kpi.value) : kpi.value}
@@ -364,27 +387,49 @@ export default function Dashboard() {
             </span>
           </div>
 
-          {/* Summary pills */}
+          {/* Summary pills as tabs */}
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveStatusTab('Semua')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium transition-colors ${
+                activeStatusTab === 'Semua' 
+                  ? 'bg-white/10 text-white border-white/20' 
+                  : 'bg-transparent text-gray-500 border-white/5 hover:bg-white/5'
+              }`}
+            >
+              Semua
+            </button>
             {Object.entries(pipelineSummary).map(([status, count]) => {
               const config = STATUS_CONFIG[status];
               if (!config) return null;
+              
+              // Only render tabs for actionable statuses 
+              const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi', 'Deal'];
+              if (!actionStatuses.includes(status)) return null;
+
+              const isActive = activeStatusTab === status;
+
               return (
-                <div key={status} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${config.bgColor} ${config.color} ${config.borderColor}`}>
+                <button 
+                  key={status} 
+                  onClick={() => setActiveStatusTab(status)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium transition-colors ${
+                    isActive 
+                      ? `${config.bgColor} ${config.color} ${config.borderColor} ring-1 ring-${config.color.replace('text-', '')}/50` 
+                      : `bg-transparent ${config.color} border-${config.color.replace('text-', '')}/20 opacity-70 hover:opacity-100 hover:${config.bgColor}`
+                  }`}
+                >
                   <config.icon size={12} />
                   {status}: {count}
-                </div>
+                </button>
               );
             })}
-            {pipelineSummary['Deal'] ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                ✓ Deal: {pipelineSummary['Deal']}
-              </div>
-            ) : null}
           </div>
 
           {/* Actionable lead cards by status */}
           {Object.entries(actionableLeads).map(([status, statusLeads]) => {
+            if (activeStatusTab !== 'Semua' && activeStatusTab !== status) return null;
+            
             const config = STATUS_CONFIG[status];
             if (!config) return null;
 
