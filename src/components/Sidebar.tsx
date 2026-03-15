@@ -1,8 +1,9 @@
 import React, { useMemo, useEffect } from 'react';
 import { LayoutDashboard, Users, LineChart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { DEFAULT_PROGRESS, STORAGE_KEYS, type ProgressData } from '../data/dataDefaults';
+import { useLocalStorage } from '../hooks/useLocalStorage'; // Kept if needed elsewhere, though can be removed if unused.
+import { DEFAULT_PROGRESS, type ProgressData } from '../data/dataDefaults';
+import { fetchProgress } from '../services/progressService';
 
 interface SidebarProps {
   activeTab: string;
@@ -11,7 +12,24 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [isOpen, setIsOpen] = React.useState(true);
-  const [progressData] = useLocalStorage<ProgressData>(STORAGE_KEYS.PROGRESS, DEFAULT_PROGRESS);
+  const [progressData, setProgressData] = React.useState<ProgressData>(DEFAULT_PROGRESS);
+  
+  const loadProgress = async () => {
+    try {
+      const data = await fetchProgress();
+      if (data) setProgressData(data);
+    } catch (err) {
+      console.error('Failed to sync sidebar progress:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadProgress();
+    
+    // Listen for progress updates from MissionControl
+    window.addEventListener('wb:progress-updated', loadProgress);
+    return () => window.removeEventListener('wb:progress-updated', loadProgress);
+  }, []);
 
   const progressPercent = useMemo(() => {
     if (progressData.target <= 0) return 0;

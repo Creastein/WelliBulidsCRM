@@ -195,7 +195,11 @@ export default function Dashboard() {
 
     try {
       await upsertAllKpi(updatedKpi);
-      if (editingKpi === 'revenue') await saveProgress(updatedProgress);
+      if (editingKpi === 'revenue') {
+        await saveProgress(updatedProgress);
+        // Dispatch event to sync Sidebar immediately
+        window.dispatchEvent(new Event('wb:progress-updated'));
+      }
       setLastSaved(new Date().toISOString());
       toast.success('KPI diperbarui!');
     } catch (err: unknown) {
@@ -219,6 +223,9 @@ export default function Dashboard() {
     setKpiData(updatedKpi);
     try {
       await saveProgress(updatedProgress);
+      // Dispatch event to sync Sidebar immediately
+      window.dispatchEvent(new Event('wb:progress-updated'));
+      
       await upsertAllKpi(updatedKpi);
       setLastSaved(new Date().toISOString());
       toast.success('Revenue diperbarui!');

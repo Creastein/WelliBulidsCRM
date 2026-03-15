@@ -152,37 +152,53 @@ export default function Pricing() {
             variants={itemVariants}
             whileHover={{ y: -8, scale: 1.02 }}
             transition={{ duration: 0.2 }}
-            className={`relative bg-[#0f0f0f]/50 backdrop-blur-xl rounded-2xl border ${pkg.popular ? 'border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-white/5'} p-6 flex flex-col gap-6 transition-colors group`}
+            className={`relative bg-[#0f0f0f]/50 backdrop-blur-xl rounded-2xl border ${
+              pkg.popular ? 'border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-white/5'
+            } p-6 flex flex-col gap-6 transition-colors group`}
           >
-            {pkg.popular && (
-              <motion.div
-                animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="absolute top-4 right-4 bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-semibold uppercase tracking-wider py-1 px-3 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.2)]"
-              >
-                Most Popular
-              </motion.div>
-            )}
-
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className={`w-10 h-10 rounded-xl ${pkg.bg} flex items-center justify-center`}>
-                  <pkg.icon size={20} className={pkg.color} />
+            <div className="flex flex-col gap-5 h-full">
+              {/* Header: Icon and Label */}
+              <div className="flex items-start justify-between gap-2">
+                <div className={`w-12 h-12 rounded-2xl ${pkg.bg} flex items-center justify-center shrink-0`}>
+                  <pkg.icon size={24} className={pkg.color} />
                 </div>
-                <h3 className="text-lg font-semibold text-white mt-3">{pkg.name}</h3>
-                <p className="text-xl font-semibold text-white mt-2">{pkg.price}</p>
+                {pkg.popular && (
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-semibold uppercase tracking-wider py-1.5 px-3 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.2)] whitespace-nowrap"
+                  >
+                    Most Popular
+                  </motion.div>
+                )}
               </div>
-              <div className="text-right">
-                <p className="text-[11px] uppercase tracking-wider text-gray-500">Durasi</p>
-                <p className="text-sm text-gray-300 mt-1">{pkg.time}</p>
+              
+              {/* Content body that grows */}
+              <div className="flex flex-col flex-1 mt-2">
+                <div className="min-h-[56px] mb-4">
+                  <h3 className="text-xl font-bold text-white line-clamp-2">{pkg.name}</h3>
+                </div>
+                
+                <div className="flex flex-col gap-1 mb-6">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500">Mulai dari</p>
+                  <p className="text-3xl font-bold text-white tracking-tight whitespace-nowrap">{pkg.price}</p>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 pb-4">
+                   <div>
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">Estimasi Durasi</p>
+                      <p className="text-sm text-gray-300 font-medium mt-1">{pkg.time}</p>
+                   </div>
+                </div>
+
+                <div className="rounded-xl border border-white/5 bg-[#0f0f0f]/50 px-4 py-3 mt-auto">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500">Target Bisnis</p>
+                  <p className="text-sm text-gray-300 mt-1">{pkg.target}</p>
+                </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wider text-gray-500">Target Bisnis</p>
-              <p className="text-sm text-gray-300 mt-1">{pkg.target}</p>
-            </div>
-
+            {/* Features section decoupled from h-full top container */}
             <div className="pt-2">
               <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-3">Fitur Termasuk</p>
               <ul className="space-y-2">
@@ -203,10 +219,11 @@ export default function Pricing() {
             </div>
 
             <button
-              className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${pkg.popular
-                ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]'
-                : 'bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10'
-                }`}
+              className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                pkg.popular
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                  : 'bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10'
+              }`}
             >
               Pilih Paket
             </button>
