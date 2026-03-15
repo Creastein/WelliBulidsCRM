@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Zap, Star, Crown, RefreshCw, Tag, CheckCircle2 } from 'lucide-react';
+import { Check, Zap, Star, Crown, RefreshCw, Tag, CheckCircle2, Plus, Wrench, Info } from 'lucide-react';
 
 const packages = [
   {
@@ -10,9 +10,9 @@ const packages = [
     color: 'text-blue-400',
     bg: 'bg-blue-400/10',
     border: 'border-blue-500/30',
-    target: 'Bengkel, Klinik kecil, Toko kecil',
-    time: '3-5 hari',
-    features: ['Info bisnis lengkap', 'Kontak & lokasi terintegrasi', 'Jam buka & galeri foto', 'Tombol WA CTA', 'Mobile responsive']
+    target: 'Bengkel, Klinik kecil, UMKM, Toko kecil',
+    time: '3–5 hari kerja',
+    features: ['Info bisnis lengkap', 'Jam operasional & galeri foto', 'Tombol WhatsApp CTA', 'Kontak & embed Google Maps', 'Mobile responsive']
   },
   {
     name: 'Website Katalog',
@@ -21,32 +21,67 @@ const packages = [
     color: 'text-purple-400',
     bg: 'bg-purple-400/10',
     border: 'border-purple-500/30',
-    target: 'Restoran, Toko Furniture, Salon',
-    time: '5-7 hari',
-    features: ['Semua fitur Landing Page', 'Katalog produk/layanan', 'Galeri foto lebih banyak', 'Form kontak + WhatsApp', 'Basic SEO'],
+    target: 'Restoran, Salon, Tour & Activity, Toko Online',
+    time: '5–7 hari kerja',
+    features: ['Semua fitur Landing Page Simple', 'Katalog produk / layanan', 'Galeri foto lebih banyak (hingga 20)', 'Form kontak + integrasi WhatsApp', 'Basic SEO', 'Halaman multi-section'],
     popular: true
   },
   {
     name: 'Website Premium',
-    price: 'Rp 3.500.000',
+    price: 'Rp 4.000.000',
     icon: Crown,
     color: 'text-orange-400',
     bg: 'bg-orange-400/10',
     border: 'border-orange-500/30',
-    target: 'Gym, Restoran besar, Klinik',
-    time: '10-14 hari',
-    features: ['Semua fitur Katalog', 'Sistem booking online', 'Multi-language (ID+EN)', 'SEO optimization lanjutan', 'Integrasi Instagram']
+    target: 'Villa butik, Resort kecil, Spa, Tour operator premium',
+    time: '10–14 hari kerja',
+    features: ['Semua fitur Website Katalog', 'Multi-language (ID + EN)', 'SEO lanjutan (Schema, dll)', 'Setup GA4 + Search Console', 'Integrasi Instagram feed', 'Optimasi performa (PageSpeed 90+)', 'Custom domain & DNS']
   },
   {
     name: 'Website Villa Pro',
-    price: 'Rp 5.000.000+',
+    price: 'Rp 6.500.000+',
     icon: CheckCircle2,
     color: 'text-emerald-400',
     bg: 'bg-emerald-400/10',
     border: 'border-emerald-500/30',
-    target: 'Villa resort, Hotel, Spa besar',
-    time: '14-21 hari',
-    features: ['Semua fitur Premium', 'Kalender booking real-time', 'Virtual tour foto 360°', 'Payment gateway', 'Dashboard admin']
+    target: 'Villa resort, Hotel, Spa besar, Hospitality premium',
+    time: '14–21 hari kerja',
+    features: ['Semua fitur Website Premium', 'Kalender booking real-time', 'Virtual tour foto 360°', 'Payment gateway (Midtrans/Xendit)', 'Dashboard admin', 'Laporan performa (1 bln pertama)', 'Prioritas support 30 hari']
+  }
+];
+
+const addons = [
+  { name: 'Multi-language EN+ID', price: 'Rp 400.000' },
+  { name: 'Setup SEO lengkap', desc: 'GA4 + GSC + Schema', price: 'Rp 300.000' },
+  { name: 'Integrasi Instagram feed', price: 'Rp 200.000' },
+  { name: 'Speed optimization', desc: 'PageSpeed 90+', price: 'Rp 300.000' },
+  { name: 'Virtual tour foto 360°', price: 'Rp 750.000' },
+  { name: 'Sistem booking online', desc: 'Real-time', price: 'Rp 1.500.000' },
+  { name: 'Payment gateway', desc: 'Midtrans/Xendit', price: 'Rp 1.000.000' },
+  { name: 'Logo design', desc: '3 konsep', price: 'Rp 350.000' },
+  { name: 'Copywriting halaman', desc: 'Per halaman', price: 'Rp 250.000' },
+  { name: 'Domain + Hosting setup', desc: '1 tahun', price: 'Rp 600.000' }
+];
+
+const maintenancePackages = [
+  {
+    name: 'Basic',
+    price: 'Rp 250.000',
+    period: '/ bln',
+    features: ['Update konten ringan (maks. 3x/bulan)', 'Monitoring uptime website', 'Backup bulanan']
+  },
+  {
+    name: 'Standard',
+    price: 'Rp 500.000',
+    period: '/ bln',
+    features: ['Semua fitur Basic', 'Update fitur minor (tambah section/layout)', 'Backup mingguan', 'Laporan performa bulanan'],
+    popular: true
+  },
+  {
+    name: 'Priority',
+    price: 'Rp 1.000.000',
+    period: '/ bln',
+    features: ['Semua fitur Standard', 'Respons prioritas (maks. 24 jam kerja)', 'Update konten tidak terbatas', 'Konsultasi SEO & konten (1x/bulan)']
   }
 ];
 
@@ -180,47 +215,115 @@ export default function Pricing() {
       </motion.div>
 
       <motion.section
-        className="mt-12"
+        className="mt-20"
         variants={containerVariants}
         initial="hidden"
         animate="show"
       >
-        <motion.div
-          variants={itemVariants}
-          className="bg-[#0f0f0f]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8"
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-              <RefreshCw size={20} className="text-blue-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Maintenance Bulanan</h3>
-              <p className="text-sm text-gray-400 mt-2 max-w-xl">
-                Layanan berkelanjutan untuk menjaga website tetap aman, cepat, dan up-to-date.
-              </p>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-                <li className="flex items-center gap-2 text-sm text-gray-300">
-                  <Check size={16} className="text-blue-400" /> Update konten rutin
-                </li>
-                <li className="flex items-center gap-2 text-sm text-gray-300">
-                  <Check size={16} className="text-blue-400" /> Backup bulanan
-                </li>
-                <li className="flex items-center gap-2 text-sm text-gray-300">
-                  <Check size={16} className="text-blue-400" /> Security check
-                </li>
-                <li className="flex items-center gap-2 text-sm text-gray-300">
-                  <Check size={16} className="text-blue-400" /> Support teknis via WA
-                </li>
-              </ul>
-            </div>
+        <motion.div variants={itemVariants} className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-semibold tracking-wide mb-3">
+            <Plus size={14} />
+            Add-on (Opsional)
           </div>
-
-          <div className="shrink-0 text-center md:text-right w-full md:w-auto border-t md:border-t-0 md:border-l border-[#1f1f1f] pt-6 md:pt-0 md:pl-8">
-            <p className="text-[11px] uppercase tracking-wider text-gray-500">Mulai Dari</p>
-            <p className="text-3xl font-semibold text-white mt-1">Rp 200rb</p>
-            <p className="text-sm text-gray-400">/ bulan</p>
-          </div>
+          <h2 className="text-2xl font-semibold text-white">Lengkapi Website Anda</h2>
         </motion.div>
+
+        <motion.div 
+          variants={itemVariants}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+        >
+          {addons.map((addon, idx) => (
+            <div key={idx} className="bg-[#0f0f0f]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 flex flex-col justify-between group hover:border-white/10 transition-colors">
+              <div>
+                <h4 className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">{addon.name}</h4>
+                {addon.desc && <p className="text-[11px] text-gray-500 mt-0.5">{addon.desc}</p>}
+              </div>
+              <p className="text-sm font-semibold text-blue-400 mt-3">{addon.price}</p>
+            </div>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      <motion.section
+        className="mt-20"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={itemVariants} className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold tracking-wide mb-3">
+            <Wrench size={14} />
+            Paket Maintenance
+          </div>
+          <h2 className="text-2xl font-semibold text-white">Setelah Website Live</h2>
+          <p className="text-sm text-gray-400 mt-2 max-w-xl mx-auto">
+            Bisnis tetap butuh perawatan. Maintenance memastikan website tetap cepat, aman, dan relevan.
+            <br />
+            <span className="text-xs text-gray-500 italic">*Belum termasuk biaya perpanjangan domain & hosting tahunan.</span>
+          </p>
+        </motion.div>
+
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          variants={containerVariants}
+        >
+          {maintenancePackages.map((pkg, idx) => (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              className={`bg-[#0f0f0f]/50 backdrop-blur-xl border ${pkg.popular ? 'border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-white/5'} rounded-2xl p-6 md:p-8 flex flex-col`}
+            >
+              <h3 className="text-xl font-semibold text-white">{pkg.name}</h3>
+              <div className="mt-2 mb-6 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-white">{pkg.price}</span>
+                <span className="text-sm text-gray-500">{pkg.period}</span>
+              </div>
+              
+              <ul className="space-y-3 mt-auto">
+                {pkg.features.map((feature, fIdx) => (
+                  <li key={fIdx} className="flex items-start gap-2 text-sm text-gray-300">
+                    <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <span className="leading-snug">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      <motion.section
+        className="mt-16 mb-8 max-w-3xl mx-auto"
+        variants={itemVariants}
+      >
+        <div className="bg-orange-500/5 border border-orange-500/10 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Info size={18} className="text-orange-400" />
+            <h3 className="text-sm font-semibold text-orange-400 uppercase tracking-wider">Catatan Penting</h3>
+          </div>
+          <ul className="space-y-2">
+            <li className="flex items-start gap-2 text-sm text-gray-400">
+              <span className="text-orange-500/50 mt-1">•</span>
+              <span>Harga belum termasuk domain & hosting (jika belum ada) — estimasi <strong>Rp 600.000/tahun</strong></span>
+            </li>
+            <li className="flex items-start gap-2 text-sm text-gray-400">
+              <span className="text-orange-500/50 mt-1">•</span>
+              <span>Revisi desain: <strong>2x gratis</strong>, revisi ke-3 dst dikenakan Rp 100.000/sesi</span>
+            </li>
+            <li className="flex items-start gap-2 text-sm text-gray-400">
+              <span className="text-orange-500/50 mt-1">•</span>
+              <span>Pembayaran: <strong>50% di awal, 50% setelah approval final</strong></span>
+            </li>
+            <li className="flex items-start gap-2 text-sm text-gray-400">
+              <span className="text-orange-500/50 mt-1">•</span>
+              <span>Proyek dimulai setelah DP diterima dan brief lengkap diserahkan</span>
+            </li>
+            <li className="flex items-start gap-2 text-sm text-gray-400">
+              <span className="text-orange-500/50 mt-1">•</span>
+              <span>Harga berlaku hingga portofolio diperbarui — subject to change</span>
+            </li>
+          </ul>
+        </div>
       </motion.section>
     </div>
   );
