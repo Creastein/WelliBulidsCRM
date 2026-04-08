@@ -109,12 +109,26 @@ export default function Finance() {
 
   // Auto-calculate milestone status from current revenue
   const milestones = useMemo(() => {
-    return DEFAULT_MILESTONES.map((ms) => ({
-      ...ms,
-      status: progressData.current >= ms.target ? 'achieved' : progressData.current > 0 && progressData.current >= ms.target * 0.5 ? 'in-progress' : 'pending',
-      progress: Math.min(100, Math.round((progressData.current / ms.target) * 100)),
-    }));
-  }, [progressData.current]);
+    const baseTarget = DEFAULT_PROGRESS.target;
+    const scale = baseTarget > 0 ? progressData.target / baseTarget : 1;
+
+    return DEFAULT_MILESTONES.map((ms) => {
+      const scaledTarget = Math.max(1, Math.round(ms.target * scale));
+
+      return {
+        ...ms,
+        target: scaledTarget,
+        targetLabel: formatCurrency(scaledTarget),
+        status:
+          progressData.current >= scaledTarget
+            ? 'achieved'
+            : progressData.current > 0 && progressData.current >= scaledTarget * 0.5
+              ? 'in-progress'
+              : 'pending',
+        progress: Math.min(100, Math.round((progressData.current / scaledTarget) * 100)),
+      };
+    });
+  }, [progressData.current, progressData.target]);
 
   // Deal count from CRM
   const dealCount = useMemo(() => leads.filter((l) => l.status === 'Deal').length, [leads]);
@@ -178,17 +192,20 @@ export default function Finance() {
   const addRevenue = async () => {
     const amount = Number(revenueAmount);
     if (isNaN(amount) || amount <= 0) return;
+    const prevProgress = progressData;
     const updatedProgress = { ...progressData, current: progressData.current + amount };
     setProgressData(updatedProgress);
     try {
       await saveProgress(updatedProgress);
+      window.dispatchEvent(new Event('wb:progress-updated'));
       toast.success(`Revenue Rp ${amount.toLocaleString('id-ID')} dicatat!`);
+      setRevenueAmount('');
+      setRevenueNote('');
+      setShowRevenueModal(false);
     } catch (err: unknown) {
+      setProgressData(prevProgress);
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
     }
-    setRevenueAmount('');
-    setRevenueNote('');
-    setShowRevenueModal(false);
   };
 
   useEffect(() => {

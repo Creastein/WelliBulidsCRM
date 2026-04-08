@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
+  CheckCircle,
   Target,
   MessageSquare,
   Reply,
@@ -22,7 +23,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchLeads } from '../services/leadsService';
-import { fetchKpi, upsertAllKpi } from '../services/kpiService';
+import { fetchKpi } from '../services/kpiService';
 import { fetchProgress, saveProgress } from '../services/progressService';
 import {
   DEFAULT_KPI,
@@ -66,6 +67,15 @@ export default function Dashboard() {
   const [editingRevenue, setEditingRevenue] = useState(false);
   const [revenueInput, setRevenueInput] = useState('');
 
+  // Edit state for target settings (target, deadline, avg deal value)
+  const [showTargetModal, setShowTargetModal] = useState(false);
+  const [isSavingTarget, setIsSavingTarget] = useState(false);
+  const [targetForm, setTargetForm] = useState({
+    target: '',
+    targetDate: '',
+    avgDealValue: '',
+  });
+
   // Computed KPI data based on leads
   const computedKpiData = useMemo(() => {
     // Total DM Terkirim = semua prospek di database (setiap lead = 1 DM terkirim)
@@ -80,9 +90,10 @@ export default function Dashboard() {
       if (kpi.key === 'dm_sent') return { ...kpi, value: dmCount };
       if (kpi.key === 'total_reply') return { ...kpi, value: replyCount };
       if (kpi.key === 'closing') return { ...kpi, value: closingCount };
-      return kpi; // Untuk 'revenue', nilainya tetap manual
+      if (kpi.key === 'revenue') return { ...kpi, value: progressData.current, target: progressData.target };
+      return kpi;
     });
-  }, [kpiData, leads]);
+  }, [kpiData, leads, progressData.current, progressData.target]);
 
   // Fetch data dari Supabase saat mount
   useEffect(() => {
@@ -136,18 +147,27 @@ export default function Dashboard() {
   }, [leads]);
 
   // Auto-calculate days remaining
-  const daysRemaining = useMemo(() => {
+  const deadlineDiffDays = useMemo(() => {
     const targetDate = new Date(progressData.targetDate);
     const now = new Date();
     const diff = targetDate.getTime() - now.getTime();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }, [progressData.targetDate, currentTime]);
+
+  const daysRemaining = useMemo(() => Math.max(0, deadlineDiffDays), [deadlineDiffDays]);
 
   // Progress percentage
   const progressPercent = useMemo(() => {
     if (progressData.target <= 0) return 0;
     return Math.min(100, Math.round((progressData.current / progressData.target) * 100));
   }, [progressData.current, progressData.target]);
+
+  const isTargetAchieved = useMemo(() => {
+    if (progressData.target <= 0) return false;
+    return progressData.current >= progressData.target;
+  }, [progressData.current, progressData.target]);
+
+  const surplus = useMemo(() => Math.max(0, progressData.current - progressData.target), [progressData.current, progressData.target]);
 
   // Clients needed
   const clientsNeeded = useMemo(() => {
@@ -171,6 +191,29 @@ export default function Dashboard() {
     }).format(value);
   };
 
+  const getDateInputValue = (value: string): string => {
+    const match = value?.match(/\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : '';
+  };
+
+  const getLocalTimezoneOffset = (): string => {
+    const minutes = -new Date().getTimezoneOffset();
+    const sign = minutes >= 0 ? '+' : '-';
+    const abs = Math.abs(minutes);
+    const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+    const mm = String(abs % 60).padStart(2, '0');
+    return `${sign}${hh}:${mm}`;
+  };
+
+  const openTargetModal = () => {
+    setTargetForm({
+      target: String(progressData.target),
+      targetDate: getDateInputValue(progressData.targetDate),
+      avgDealValue: String(progressData.avgDealValue),
+    });
+    setShowTargetModal(true);
+  };
+
   // KPI Edit handlers
   const startEditKpi = (kpi: KpiItem) => {
     if (kpi.key !== 'revenue') return;
@@ -183,29 +226,26 @@ export default function Dashboard() {
     const numValue = Number(editValue);
     if (isNaN(numValue)) return;
 
-    const updatedKpi = kpiData.map((kpi) => (kpi.key === editingKpi ? { ...kpi, value: numValue } : kpi));
-    setKpiData(updatedKpi);
-
-    // If editing revenue KPI, sync with progress
-    let updatedProgress = progressData;
-    if (editingKpi === 'revenue') {
-      updatedProgress = { ...progressData, current: numValue };
-      setProgressData(updatedProgress);
+    // Single source of truth: revenue value lives in `progress.current` (not in KPI table).
+    if (editingKpi !== 'revenue') {
+      setEditingKpi(null);
+      return;
     }
+
+    const prevProgressData = progressData;
+    const updatedProgress: ProgressData = { ...progressData, current: numValue };
+    setProgressData(updatedProgress);
 
     try {
-      await upsertAllKpi(updatedKpi);
-      if (editingKpi === 'revenue') {
-        await saveProgress(updatedProgress);
-        // Dispatch event to sync Sidebar immediately
-        window.dispatchEvent(new Event('wb:progress-updated'));
-      }
+      await saveProgress(updatedProgress);
+      window.dispatchEvent(new Event('wb:progress-updated'));
       setLastSaved(new Date().toISOString());
-      toast.success('KPI diperbarui!');
+      toast.success('Revenue diperbarui!');
+      setEditingKpi(null);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan KPI');
+      setProgressData(prevProgressData);
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
     }
-    setEditingKpi(null);
   };
 
   const cancelEditKpi = () => {
@@ -218,21 +258,67 @@ export default function Dashboard() {
     const numValue = Number(revenueInput);
     if (isNaN(numValue)) return;
     const updatedProgress = { ...progressData, current: numValue };
-    const updatedKpi = kpiData.map((kpi) => (kpi.key === 'revenue' ? { ...kpi, value: numValue } : kpi));
+    const prevProgressData = progressData;
     setProgressData(updatedProgress);
-    setKpiData(updatedKpi);
+
     try {
       await saveProgress(updatedProgress);
       // Dispatch event to sync Sidebar immediately
       window.dispatchEvent(new Event('wb:progress-updated'));
-      
-      await upsertAllKpi(updatedKpi);
       setLastSaved(new Date().toISOString());
       toast.success('Revenue diperbarui!');
+      setEditingRevenue(false);
     } catch (err: unknown) {
+      setProgressData(prevProgressData);
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
     }
-    setEditingRevenue(false);
+  };
+
+  const saveTargetSettings = async () => {
+    const target = Number(targetForm.target);
+    const avgDealValue = Number(targetForm.avgDealValue);
+    const targetDateOnly = targetForm.targetDate;
+
+    if (!Number.isFinite(target) || target <= 0) {
+      toast.error('Target revenue tidak valid');
+      return;
+    }
+    if (!targetDateOnly) {
+      toast.error('Target date wajib diisi');
+      return;
+    }
+    if (!Number.isFinite(avgDealValue) || avgDealValue <= 0) {
+      toast.error('Avg deal value tidak valid');
+      return;
+    }
+
+    const targetDate = `${targetDateOnly}T00:00:00${getLocalTimezoneOffset()}`;
+    const remaining = target - progressData.current;
+    const computedClientsNeeded = remaining > 0 ? Math.ceil(remaining / avgDealValue) : 0;
+
+    const updatedProgress: ProgressData = {
+      ...progressData,
+      target,
+      targetDate,
+      avgDealValue,
+      clientsNeeded: computedClientsNeeded,
+    };
+    const prevProgressData = progressData;
+    setProgressData(updatedProgress);
+
+    try {
+      setIsSavingTarget(true);
+      await saveProgress(updatedProgress);
+      window.dispatchEvent(new Event('wb:progress-updated'));
+      setLastSaved(new Date().toISOString());
+      toast.success('Target diperbarui!');
+      setShowTargetModal(false);
+    } catch (err: unknown) {
+      setProgressData(prevProgressData);
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan target');
+    } finally {
+      setIsSavingTarget(false);
+    }
   };
 
   const priorityBadge = (priority: string) => {
@@ -281,9 +367,25 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto bg-[#1c120b]/80 p-4 rounded-xl border border-[#3a2a1f]">
-            <div>
-              <p className="text-xs text-[#caa984] uppercase tracking-wider font-semibold mb-1">Target Revenue</p>
-              <p className="text-xl font-mono text-[#fff4e6]">{formatCurrency(progressData.target)}</p>
+            <div className="flex items-start gap-3">
+              <div>
+                <p className="text-xs text-[#caa984] uppercase tracking-wider font-semibold mb-1">Target Revenue</p>
+                <p className="text-xl font-mono text-[#fff4e6]">{formatCurrency(progressData.target)}</p>
+                {isTargetAchieved && (
+                  <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
+                    <CheckCircle size={12} />
+                    Target tercapai
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={openTargetModal}
+                title="Edit target"
+                className="mt-0.5 p-1.5 rounded-lg text-[#caa984] hover:text-[#fff4e6] hover:bg-white/5 transition-colors"
+              >
+                <Pencil size={14} />
+              </button>
             </div>
             <div className="w-px h-10 bg-[#3a2a1f]"></div>
             <div>
@@ -294,6 +396,15 @@ export default function Dashboard() {
                   {daysRemaining} <span className="text-sm text-[#caa984]">days</span>
                 </p>
               </div>
+              {isTargetAchieved && (
+                <p className="mt-1 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
+                  {deadlineDiffDays > 0
+                    ? `Tercapai ${deadlineDiffDays} hari lebih cepat`
+                    : deadlineDiffDays === 0
+                      ? 'Tercapai tepat waktu'
+                      : `Tercapai ${Math.abs(deadlineDiffDays)} hari setelah deadline`}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -366,7 +477,9 @@ export default function Dashboard() {
                     </p>
                   )}
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-gray-500">{kpi.targetLabel}</span>
+                    <span className="text-gray-500">
+                      {kpi.key === 'revenue' ? `Target: ${formatCurrency(kpi.target)}` : kpi.targetLabel}
+                    </span>
                   </div>
                 </div>
 
@@ -496,14 +609,42 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Progress Menuju Rp 10 Juta */}
+        {/* Progress Menuju Target */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={18} className="text-gray-400" />
-            <h2 className="text-lg font-heading text-gray-200">Progress Menuju Rp 10 Juta</h2>
+            <h2 className="text-lg font-heading text-gray-200">Progress Menuju {formatCurrency(progressData.target)}</h2>
           </div>
 
           <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-6 h-[calc(100%-2rem)]">
+            {isTargetAchieved && (
+              <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  <div className="mt-0.5 text-emerald-400">
+                    <CheckCircle size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-300">Target tercapai</p>
+                    <p className="text-xs text-emerald-200/80 mt-0.5 font-mono">
+                      {surplus > 0 ? `Surplus ${formatCurrency(surplus)}.` : 'Tepat di target.'}{' '}
+                      {deadlineDiffDays > 0
+                        ? `${deadlineDiffDays} hari lebih cepat.`
+                        : deadlineDiffDays === 0
+                          ? 'Tepat waktu.'
+                          : `${Math.abs(deadlineDiffDays)} hari setelah deadline.`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={openTargetModal}
+                  className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
+                >
+                  Set target baru
+                </button>
+              </div>
+            )}
+
             {/* Donut Chart */}
             <div className="flex flex-col items-center justify-center mb-8 relative">
               <svg className="w-48 h-48" viewBox="0 0 120 120">
@@ -513,7 +654,7 @@ export default function Dashboard() {
                   cy="60"
                   r="50"
                   fill="none"
-                  stroke="#f97316"
+                  stroke={isTargetAchieved ? '#10b981' : '#f97316'}
                   strokeWidth="12"
                   strokeLinecap="round"
                   strokeDasharray={`${progressPercent * 3.14} ${314 - progressPercent * 3.14}`}
@@ -524,7 +665,9 @@ export default function Dashboard() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <p className="text-4xl font-mono font-bold text-white mb-1">{progressPercent}%</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Tercapai</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+                    {isTargetAchieved ? 'Target Tercapai' : 'Tercapai'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -571,9 +714,13 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                <span className="text-sm text-gray-400">Sisa Target</span>
-                <span className="font-mono text-orange-400 font-medium">
-                  {formatCurrency(progressData.target - progressData.current)}
+                <span className="text-sm text-gray-400">{isTargetAchieved ? 'Surplus' : 'Sisa Target'}</span>
+                <span className={`font-mono font-medium ${isTargetAchieved ? 'text-emerald-400' : 'text-orange-400'}`}>
+                  {formatCurrency(
+                    isTargetAchieved
+                      ? Math.max(0, progressData.current - progressData.target)
+                      : Math.max(0, progressData.target - progressData.current)
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-white/5">
@@ -581,12 +728,140 @@ export default function Dashboard() {
                 <span className="font-mono text-white font-medium">
                   {clientsNeeded}{' '}
                   <span className="text-xs text-gray-500">(@ {formatCurrency(progressData.avgDealValue)})</span>
+                  {isTargetAchieved && <span className="ml-2 text-xs font-semibold text-emerald-400">DONE</span>}
                 </span>
               </div>
             </div>
           </div>
         </section>
       </div>
+
+      {/* Target Settings Modal */}
+      {showTargetModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowTargetModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-[#111]/60 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-md overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <Target size={18} className="text-orange-400" />
+                <h2 className="text-xl font-bold text-white">Update Target</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTargetModal(false)}
+                className="text-gray-500 hover:text-white transition-colors p-1 rounded-md hover:bg-white/5"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">
+                  Target Revenue (Rupiah)
+                </label>
+                <input
+                  type="number"
+                  value={targetForm.target}
+                  onChange={(e) => setTargetForm((prev) => ({ ...prev, target: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTargetSettings();
+                    if (e.key === 'Escape') setShowTargetModal(false);
+                  }}
+                  placeholder="Contoh: 20000000"
+                  autoFocus
+                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">
+                  Deadline (Target Date)
+                </label>
+                <input
+                  type="date"
+                  value={targetForm.targetDate}
+                  onChange={(e) => setTargetForm((prev) => ({ ...prev, targetDate: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTargetSettings();
+                    if (e.key === 'Escape') setShowTargetModal(false);
+                  }}
+                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">
+                  Avg Deal Value (Rupiah)
+                </label>
+                <input
+                  type="number"
+                  value={targetForm.avgDealValue}
+                  onChange={(e) => setTargetForm((prev) => ({ ...prev, avgDealValue: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTargetSettings();
+                    if (e.key === 'Escape') setShowTargetModal(false);
+                  }}
+                  placeholder="Contoh: 2500000"
+                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+
+              <div className="bg-white/5 border border-white/5 rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono text-gray-500">
+                  <span>Revenue saat ini</span>
+                  <span className="text-emerald-400">{formatCurrency(progressData.current)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono text-gray-500">
+                  <span>Estimasi sisa target</span>
+                  <span className="text-orange-300">
+                    {formatCurrency(Math.max(0, (Number(targetForm.target) || 0) - progressData.current))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono text-gray-500">
+                  <span>Estimasi klien dibutuhkan</span>
+                  <span className="text-white">
+                    {(() => {
+                      const target = Number(targetForm.target) || 0;
+                      const avg = Number(targetForm.avgDealValue) || 0;
+                      const remaining = Math.max(0, target - progressData.current);
+                      return avg > 0 ? Math.ceil(remaining / avg) : 0;
+                    })()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setShowTargetModal(false)}
+                  className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={saveTargetSettings}
+                  disabled={isSavingTarget}
+                  className="px-5 py-2.5 text-sm font-medium bg-orange-500 hover:bg-orange-600 disabled:opacity-60 disabled:hover:bg-orange-500 text-white rounded-lg transition-colors"
+                >
+                  {isSavingTarget ? 'Menyimpan...' : 'Simpan Target'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
