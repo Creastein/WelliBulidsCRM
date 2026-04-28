@@ -14,20 +14,58 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  // --- Icons for categories ---
   Building2,
-  CarFront,
-  Scissors,
+  Hotel,
+  Home,
+  TreePine,
+  Laptop,
+  Fish,
+  Waves,
+  Sailboat,
+  Mountain,
+  Ship,
+  Plane,
   UtensilsCrossed,
+  Coffee,
+  ChefHat,
+  CakeSlice,
+  Flower2,
+  HeartPulse,
+  Scissors,
+  Syringe,
   Dumbbell,
+  Camera,
+  Megaphone,
+  Printer,
+  Palette,
+  Building,
+  Hammer,
+  Ruler,
+  Warehouse,
+  BookOpen,
+  Music,
+  PawPrint,
+  Heart,
+  CarFront,
   Shirt,
   Stethoscope,
   Tent,
   Gem,
   Store,
   Sparkles,
-  Plane,
+  Wrench,
+  Truck,
+  Scale,
+  Calculator,
+  ShoppingBag,
+  Flower,
   Download,
   Upload,
+  CalendarDays,
+  Clock,
+  Bell,
+  AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -46,17 +84,50 @@ const itemVariants = {
 
 const NICHE_ICONS: Record<string, React.ElementType> = {
   Building2,
-  CarFront,
-  Scissors,
+  Hotel,
+  Home,
+  TreePine,
+  Laptop,
+  Fish,
+  Waves,
+  Sailboat,
+  Mountain,
+  Ship,
+  Plane,
   UtensilsCrossed,
+  Coffee,
+  ChefHat,
+  CakeSlice,
+  Flower2,
+  HeartPulse,
+  Scissors,
+  Syringe,
   Dumbbell,
+  Camera,
+  Megaphone,
+  Printer,
+  Palette,
+  Building,
+  Hammer,
+  Ruler,
+  Warehouse,
+  BookOpen,
+  Music,
+  PawPrint,
+  Heart,
+  CarFront,
   Shirt,
   Stethoscope,
   Tent,
   Gem,
   Store,
   Sparkles,
-  Plane,
+  Wrench,
+  Truck,
+  Scale,
+  Calculator,
+  ShoppingBag,
+  Flower,
 };
 
 type SortField = 'name' | 'priority' | 'status';
@@ -97,6 +168,7 @@ export default function DatabaseProspek() {
   const [activeTab, setActiveTab] = useState('ringkasan');
   const [sortField, setSortField] = useState<SortField>('priority');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,6 +181,7 @@ export default function DatabaseProspek() {
     status: 'Belum Dihubungi' as Lead['status'],
     action: '',
     notes: '',
+    follow_up_date: '' as string,
   });
 
   // Export / Import
@@ -220,7 +293,12 @@ export default function DatabaseProspek() {
     return leads.filter((l) => l.niche === niche.label);
   }, [leads, activeTab]);
 
-  // Search + sort
+  // Reset status filter when switching tabs
+  useEffect(() => {
+    setStatusFilter(null);
+  }, [activeTab]);
+
+  // Search + sort + status filter
   const processedLeads = useMemo(() => {
     let result = filteredByTab.filter(
       (lead) =>
@@ -228,6 +306,21 @@ export default function DatabaseProspek() {
         lead.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.action.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Apply status filter
+    if (statusFilter) {
+      result = result.filter((lead) => {
+        switch (statusFilter) {
+          case 'Belum Dihubungi': return lead.status === 'Belum Dihubungi';
+          case 'Dihubungi': return lead.status === 'Dihubungi';
+          case 'Follow Up': return lead.status === 'Follow Up';
+          case 'Negosiasi': return lead.status === 'Negosiasi';
+          case 'Deal': return lead.status === 'Deal';
+          case 'Ditolak': return lead.status === 'Ditolak';
+          default: return true;
+        }
+      });
+    }
 
     result.sort((a, b) => {
       let cmp = 0;
@@ -246,7 +339,7 @@ export default function DatabaseProspek() {
     });
 
     return result;
-  }, [filteredByTab, searchTerm, sortField, sortDirection]);
+  }, [filteredByTab, searchTerm, sortField, sortDirection, statusFilter]);
 
   // Tab counters
   const tabCounters = useMemo(() => {
@@ -268,6 +361,7 @@ export default function DatabaseProspek() {
         status: lead.status,
         action: lead.action,
         notes: lead.notes,
+        follow_up_date: lead.follow_up_date ? new Date(lead.follow_up_date).toISOString().slice(0, 16) : '',
       });
     } else {
       setEditingId(null);
@@ -280,6 +374,7 @@ export default function DatabaseProspek() {
         status: 'Belum Dihubungi',
         action: '',
         notes: '',
+        follow_up_date: '',
       });
     }
     setIsModalOpen(true);
@@ -310,12 +405,18 @@ export default function DatabaseProspek() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const submitData = {
+        ...formData,
+        follow_up_date: formData.follow_up_date
+          ? new Date(formData.follow_up_date).toISOString()
+          : null,
+      };
       if (editingId) {
-        await updateLead(editingId, formData);
-        setLeads(leads.map((l) => (l.id === editingId ? { ...formData, id: editingId } : l)));
+        await updateLead(editingId, submitData);
+        setLeads(leads.map((l) => (l.id === editingId ? { ...submitData, id: editingId } : l)));
         toast.success('Perubahan berhasil disimpan');
       } else {
-        const newLead = await createLead(formData);
+        const newLead = await createLead(submitData);
         setLeads([newLead, ...leads]);
         toast.success('Prospek baru ditambahkan');
       }
@@ -545,6 +646,134 @@ export default function DatabaseProspek() {
               })}
             </div>
 
+            {/* ====== FOLLOW-UP REMINDERS PANEL ====== */}
+            {(() => {
+              const followUpLeads = leads
+                .filter((l) => l.follow_up_date && (l.status === 'Follow Up' || l.status === 'Negosiasi'))
+                .sort((a, b) => new Date(a.follow_up_date!).getTime() - new Date(b.follow_up_date!).getTime());
+
+              if (followUpLeads.length === 0) return null;
+
+              const now = new Date();
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+              const overdueLeads = followUpLeads.filter((l) => {
+                const d = new Date(l.follow_up_date!);
+                return new Date(d.getFullYear(), d.getMonth(), d.getDate()) < today;
+              });
+              const todayLeads = followUpLeads.filter((l) => {
+                const d = new Date(l.follow_up_date!);
+                return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() === today.getTime();
+              });
+              const upcomingLeads = followUpLeads.filter((l) => {
+                const d = new Date(l.follow_up_date!);
+                return new Date(d.getFullYear(), d.getMonth(), d.getDate()) > today;
+              });
+
+              return (
+                <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-2 p-4 border-b border-white/5">
+                    <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                      <Bell size={18} className="text-blue-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white">Follow-Up Reminders</h3>
+                    <span className="text-xs font-mono text-gray-500 ml-auto">{followUpLeads.length} jadwal</span>
+                    {overdueLeads.length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse">
+                        <AlertTriangle size={10} />
+                        {overdueLeads.length} overdue
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="divide-y divide-[#222] max-h-[300px] overflow-y-auto">
+                    {/* Overdue */}
+                    {overdueLeads.map((lead) => {
+                      const fuDate = new Date(lead.follow_up_date!);
+                      return (
+                        <div
+                          key={`fu-${lead.id}`}
+                          onClick={() => handleOpenModal(lead)}
+                          className="flex items-center gap-3 p-3 px-4 hover:bg-red-500/5 cursor-pointer transition-colors group"
+                        >
+                          <div className="w-1 h-8 rounded-full bg-red-500 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-red-300 font-medium truncate">{lead.name}</p>
+                            <p className="text-[10px] font-mono text-gray-500">{lead.niche} · {lead.location}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] font-mono text-red-400 flex items-center gap-1">
+                              <AlertTriangle size={10} />
+                              {fuDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                            </p>
+                            <p className="text-[10px] font-mono text-red-400/60">
+                              {fuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} · OVERDUE
+                            </p>
+                          </div>
+                          <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </div>
+                      );
+                    })}
+                    {/* Today */}
+                    {todayLeads.map((lead) => {
+                      const fuDate = new Date(lead.follow_up_date!);
+                      return (
+                        <div
+                          key={`fu-${lead.id}`}
+                          onClick={() => handleOpenModal(lead)}
+                          className="flex items-center gap-3 p-3 px-4 hover:bg-orange-500/5 cursor-pointer transition-colors group"
+                        >
+                          <div className="w-1 h-8 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-orange-300 font-medium truncate">{lead.name}</p>
+                            <p className="text-[10px] font-mono text-gray-500">{lead.niche} · {lead.location}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] font-mono text-orange-400 flex items-center gap-1">
+                              <Clock size={10} />
+                              HARI INI
+                            </p>
+                            <p className="text-[10px] font-mono text-orange-400/60">
+                              {fuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </div>
+                      );
+                    })}
+                    {/* Upcoming */}
+                    {upcomingLeads.map((lead) => {
+                      const fuDate = new Date(lead.follow_up_date!);
+                      const diffDays = Math.ceil((fuDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                      return (
+                        <div
+                          key={`fu-${lead.id}`}
+                          onClick={() => handleOpenModal(lead)}
+                          className="flex items-center gap-3 p-3 px-4 hover:bg-blue-500/5 cursor-pointer transition-colors group"
+                        >
+                          <div className="w-1 h-8 rounded-full bg-blue-500 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-200 font-medium truncate">{lead.name}</p>
+                            <p className="text-[10px] font-mono text-gray-500">{lead.niche} · {lead.location}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] font-mono text-blue-400 flex items-center gap-1">
+                              <CalendarDays size={10} />
+                              {fuDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                            </p>
+                            <p className="text-[10px] font-mono text-blue-400/60">
+                              {fuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} · {diffDays}d lagi
+                            </p>
+                          </div>
+                          <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            })()}
+
             {/* Global summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <motion.div variants={itemVariants} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
@@ -593,24 +822,52 @@ export default function DatabaseProspek() {
                     <h3 className="text-sm font-bold text-white">{activeNicheLabel}</h3>
                     <p className="text-xs font-mono text-gray-500">{nicheStats[activeNicheLabel].total} prospek</p>
                   </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'Belum Dihubungi' ? null : 'Belum Dihubungi')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg border transition-all cursor-pointer hover:scale-105 ${
+                      statusFilter === 'Belum Dihubungi'
+                        ? 'bg-orange-500/30 border-orange-400 ring-1 ring-orange-400/50 shadow-[0_0_8px_rgba(251,146,60,0.3)]'
+                        : 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                    }`}
+                  >
                     <span className="text-xs font-mono text-orange-400">{nicheStats[activeNicheLabel].notContacted}</span>
                     <span className="text-[10px] text-gray-500">Belum</span>
-                  </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'Dihubungi' ? null : 'Dihubungi')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg border transition-all cursor-pointer hover:scale-105 ${
+                      statusFilter === 'Dihubungi'
+                        ? 'bg-purple-500/30 border-purple-400 ring-1 ring-purple-400/50 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
+                        : 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
+                    }`}
+                  >
                     <span className="text-xs font-mono text-purple-400">{nicheStats[activeNicheLabel].contacted}</span>
                     <span className="text-[10px] text-gray-500">Dihubungi</span>
-                  </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'Follow Up' ? null : 'Follow Up')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg border transition-all cursor-pointer hover:scale-105 ${
+                      statusFilter === 'Follow Up'
+                        ? 'bg-blue-500/30 border-blue-400 ring-1 ring-blue-400/50 shadow-[0_0_8px_rgba(59,130,246,0.3)]'
+                        : 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20'
+                    }`}
+                  >
                     <span className="text-xs font-mono text-blue-400">{nicheStats[activeNicheLabel].followUp}</span>
                     <span className="text-[10px] text-gray-500">Follow Up</span>
-                  </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'Deal' ? null : 'Deal')}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg border transition-all cursor-pointer hover:scale-105 ${
+                      statusFilter === 'Deal'
+                        ? 'bg-emerald-500/30 border-emerald-400 ring-1 ring-emerald-400/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                        : 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
+                    }`}
+                  >
                     <span className="text-xs font-mono text-emerald-400">{nicheStats[activeNicheLabel].deal}</span>
                     <span className="text-[10px] text-gray-500">Deal</span>
-                  </div>
+                  </button>
                   <span className="text-xs font-mono text-gray-500 ml-auto">
-                    {processedLeads.length} prospek ditampilkan
+                    {processedLeads.length}{statusFilter ? ` ${statusFilter}` : ''} prospek ditampilkan
                   </span>
                 </div>
               );
@@ -706,9 +963,33 @@ export default function DatabaseProspek() {
                             )}
                           </td>
                           <td className="p-4">
-                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${STATUS_COLORS[lead.status] || ''}`}>
-                              {lead.status}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border w-fit ${STATUS_COLORS[lead.status] || ''}`}>
+                                {lead.status}
+                              </span>
+                              {lead.follow_up_date && (() => {
+                                const fuDate = new Date(lead.follow_up_date);
+                                const now = new Date();
+                                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                const fuDay = new Date(fuDate.getFullYear(), fuDate.getMonth(), fuDate.getDate());
+                                const isOverdue = fuDay < today;
+                                const isToday = fuDay.getTime() === today.getTime();
+                                const colorClass = isOverdue
+                                  ? 'text-red-400 bg-red-500/10 border-red-500/20'
+                                  : isToday
+                                    ? 'text-orange-400 bg-orange-500/10 border-orange-500/20 animate-pulse'
+                                    : 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                                return (
+                                  <span className={`flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border w-fit ${colorClass}`}>
+                                    <CalendarDays size={10} />
+                                    {isOverdue ? '⚠ ' : isToday ? '🔔 ' : ''}
+                                    {fuDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                    {' '}
+                                    {fuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-2 text-sm text-gray-400 group-hover:text-gray-200 transition-colors">
@@ -853,6 +1134,23 @@ export default function DatabaseProspek() {
                     />
                   </div>
                 </div>
+
+                {/* Follow-Up Date Picker — conditional */}
+                {(formData.status === 'Follow Up' || formData.status === 'Negosiasi') && (
+                  <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-xs font-mono text-blue-400 uppercase tracking-wider mb-3">
+                      <CalendarDays size={14} />
+                      Jadwal Follow-Up / Pengingat
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.follow_up_date}
+                      onChange={(e) => setFormData({ ...formData, follow_up_date: e.target.value })}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
+                    />
+                    <p className="text-[10px] text-gray-500 mt-2">Atur tanggal & waktu untuk mengingatkan follow-up klien ini</p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">Catatan Strategis</label>

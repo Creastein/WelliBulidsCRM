@@ -23,21 +23,72 @@ export interface Lead {
     status: 'Belum Dihubungi' | 'Dihubungi' | 'Follow Up' | 'Negosiasi' | 'Deal' | 'Ditolak';
     action: string;
     notes: string;
+    follow_up_date?: string | null;
 }
 
 export const DEFAULT_NICHES: NicheCategory[] = [
+    // --- Akomodasi & Hospitality ---
     { id: 'villa', label: 'Villa', iconName: 'Building2' },
-    { id: 'rental-mobil', label: 'Rental Mobil', iconName: 'CarFront' },
-    { id: 'salon-barbershop', label: 'Salon & Barbershop', iconName: 'Scissors' },
+    { id: 'hotel-resort', label: 'Hotel & Resort', iconName: 'Hotel' },
+    { id: 'homestay', label: 'Homestay / Guest House', iconName: 'Home' },
+    { id: 'glamping-camping', label: 'Glamping & Camping', iconName: 'TreePine' },
+    { id: 'coworking', label: 'Coworking Space', iconName: 'Laptop' },
+
+    // --- Wisata & Aktivitas Outdoor ---
+    { id: 'snorkeling-diving', label: 'Snorkeling & Diving Center', iconName: 'Fish' },
+    { id: 'water-sport', label: 'Water Sport & Aktivitas Air', iconName: 'Waves' },
+    { id: 'surf', label: 'Surf School / Surf Camp', iconName: 'Sailboat' },
+    { id: 'rafting-adventure', label: 'Rafting & Adventure', iconName: 'Mountain' },
+    { id: 'boat-charter', label: 'Sewa Perahu / Boat Charter', iconName: 'Ship' },
+    { id: 'travel-tour', label: 'Travel & Tour Lokal', iconName: 'Plane' },
+
+    // --- F&B (Makanan & Minuman) ---
     { id: 'restoran-cafe', label: 'Restoran & Cafe', iconName: 'UtensilsCrossed' },
+    { id: 'coffee-shop', label: 'Coffee Shop', iconName: 'Coffee' },
+    { id: 'catering', label: 'Catering & Katering', iconName: 'ChefHat' },
+    { id: 'bakery-pastry', label: 'Bakery & Pastry', iconName: 'CakeSlice' },
+
+    // --- Spa, Wellness & Kecantikan ---
+    { id: 'spa-massage', label: 'Spa & Massage', iconName: 'Flower2' },
+    { id: 'yoga-retreat', label: 'Yoga Studio / Retreat', iconName: 'HeartPulse' },
+    { id: 'salon-barbershop', label: 'Salon & Barbershop', iconName: 'Scissors' },
+    { id: 'klinik-kecantikan', label: 'Klinik Kecantikan / Aesthetic', iconName: 'Syringe' },
     { id: 'gym-fitness', label: 'Gym & Fitness', iconName: 'Dumbbell' },
+
+    // --- Jasa Kreatif & Media ---
+    { id: 'fotografer-videografer', label: 'Fotografer & Videografer', iconName: 'Camera' },
+    { id: 'digital-marketing', label: 'Digital Marketing Agency', iconName: 'Megaphone' },
+    { id: 'percetakan-branding', label: 'Percetakan & Branding', iconName: 'Printer' },
+    { id: 'interior-design', label: 'Interior Design & Dekorasi', iconName: 'Palette' },
+
+    // --- Properti & Konstruksi ---
+    { id: 'agen-properti', label: 'Agen Properti / Real Estate', iconName: 'Building' },
+    { id: 'kontraktor-renovasi', label: 'Kontraktor & Renovasi', iconName: 'Hammer' },
+    { id: 'arsitek', label: 'Arsitek', iconName: 'Ruler' },
+    { id: 'toko-bangunan', label: 'Toko Bangunan & Material', iconName: 'Warehouse' },
+
+    // --- Pendidikan & Kursus ---
+    { id: 'kursus-bahasa', label: 'Kursus Bahasa / Les Privat', iconName: 'BookOpen' },
+    { id: 'sekolah-musik', label: 'Sekolah Musik / Seni', iconName: 'Music' },
+
+    // --- Hewan & Pet ---
+    { id: 'pet-shop', label: 'Pet Shop & Grooming', iconName: 'PawPrint' },
+    { id: 'klinik-hewan', label: 'Klinik Hewan', iconName: 'Heart' },
+
+    // --- Jasa & Layanan Lainnya ---
+    { id: 'rental-mobil', label: 'Rental Mobil', iconName: 'CarFront' },
     { id: 'laundry', label: 'Laundry', iconName: 'Shirt' },
     { id: 'klinik', label: 'Klinik / Dokter Praktek', iconName: 'Stethoscope' },
     { id: 'event-organizer', label: 'Event Organizer', iconName: 'Tent' },
     { id: 'wedding-vendor', label: 'Wedding Vendor', iconName: 'Gem' },
     { id: 'toko-online', label: 'Toko Online / UMKM', iconName: 'Store' },
     { id: 'cleaning', label: 'Jasa Kebersihan / Cleaning', iconName: 'Sparkles' },
-    { id: 'travel-tour', label: 'Travel & Tour Lokal', iconName: 'Plane' },
+    { id: 'bengkel', label: 'Bengkel & Servis Kendaraan', iconName: 'Wrench' },
+    { id: 'ekspedisi', label: 'Jasa Pengiriman / Ekspedisi', iconName: 'Truck' },
+    { id: 'notaris', label: 'Notaris & Konsultan Hukum', iconName: 'Scale' },
+    { id: 'akuntansi-pajak', label: 'Akuntansi & Konsultan Pajak', iconName: 'Calculator' },
+    { id: 'fashion-boutique', label: 'Fashion & Boutique', iconName: 'ShoppingBag' },
+    { id: 'florist', label: 'Toko Bunga / Florist', iconName: 'Flower' },
 ];
 
 export interface KpiItem {
