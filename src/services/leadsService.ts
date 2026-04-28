@@ -51,6 +51,7 @@ function mapRowToLead(row: any): Lead {
         status: row.status ?? 'Belum Dihubungi',
         action: row.action ?? '',
         notes: row.notes ?? '',
+        follow_up_date: row.follow_up_date ?? null,
     };
 }
 
@@ -63,6 +64,7 @@ function mapLeadToRow(lead: Omit<Lead, 'id'>) {
         status: lead.status,
         action: lead.action,
         notes: lead.notes,
+        follow_up_date: lead.follow_up_date || null,
         updated_at: new Date().toISOString(),
     };
 }
