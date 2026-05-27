@@ -1,0 +1,15 @@
+{
+  "businessName": "Villa Test Bali",
+  "businessType": "Villa",
+  "location": "Bali",
+  "address": "Canggu, Bali",
+  "googleMapsUrl": "https://maps.app.goo.gl/test-greg-001",
+  "rating": 4.7,
+  "reviewCount": 128,
+  "websiteStatus": "no_website_found",
+  "digitalPresenceIssue": "Belum terlihat punya website resmi untuk direct booking.",
+  "suitableOffer": "Website villa dengan WhatsApp CTA, gallery, direct booking, dan local SEO.",
+  "prospectScore": 8,
+  "crmNote": "Test import dari Greg API.",
+  "status": "new_lead"
+}
