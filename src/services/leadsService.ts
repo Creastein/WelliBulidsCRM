@@ -40,7 +40,6 @@ export async function deleteLead(id: number): Promise<void> {
     if (error) throw new Error(`Gagal hapus lead: ${error.message}`);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRowToLead(row: any): Lead {
     return {
         id: row.id,

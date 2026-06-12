@@ -19,7 +19,6 @@ import {
   X,
   ArrowRight,
   Phone,
-  Mail,
   RefreshCw,
   Flame,
 } from 'lucide-react';

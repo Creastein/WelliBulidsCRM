@@ -72,7 +72,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { fetchLeads, createLead, updateLead, deleteLead } from '@/services/leadsService';
-import { DEFAULT_NICHES, type Lead, type NicheCategory } from '@/data/dataDefaults';
+import { DEFAULT_NICHES, type Lead } from '@/data/dataDefaults';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -244,7 +244,7 @@ export default function DatabaseProspek() {
         } else {
           toast.error('Format file tidak valid!');
         }
-      } catch (err) {
+      } catch {
         toast.error('Gagal membaca file JSON!');
       }
     };

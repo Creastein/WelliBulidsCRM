@@ -12,6 +12,7 @@ const MissionControl = lazy(() => import('../crm/MissionControl'));
 const DatabaseProspek = lazy(() => import('../crm/DatabaseProspek'));
 const Finance = lazy(() => import('../crm/Finance'));
 const Pricing = lazy(() => import('../crm/Pricing'));
+const PipelineWorkspace = lazy(() => import('../pipeline/PipelineWorkspace'));
 
 // Three.js / shadergradient components must be disabled for SSR as they access browser APIs like canvas and window
 const GradientBackground = dynamic(() => import('../crm/GradientBackground'), { ssr: false });
@@ -35,6 +36,7 @@ export default function AppShell() {
     'Ctrl+2': () => setActiveTab('crm'),
     'Ctrl+3': () => setActiveTab('finance'),
     'Ctrl+4': () => setActiveTab('pricing'),
+    'Ctrl+5': () => setActiveTab('pipeline'),
     'Ctrl+N': () => {
       if (activeTab !== 'crm') setActiveTab('crm');
       setTimeout(() => window.dispatchEvent(new Event('wb:new-lead')), 50);
@@ -83,8 +85,7 @@ export default function AppShell() {
             {activeTab === 'crm' && <DatabaseProspek />}
             {activeTab === 'finance' && <Finance />}
             {activeTab === 'pricing' && <Pricing />}
-            {/* TODO: Pipeline Architect — enable after CRM migration is verified */}
-            {/* activeTab === 'pipeline' && <PipelineArchitect /> */}
+            {activeTab === 'pipeline' && <PipelineWorkspace />}
           </Suspense>
           <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>

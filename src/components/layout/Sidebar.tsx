@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useEffect } from 'react';
-import { LayoutDashboard, Users, LineChart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, LineChart, Tag, GitMerge, ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_PROGRESS, type ProgressData } from '@/data/dataDefaults';
 import { fetchProgress } from '@/services/progressService';
@@ -25,7 +26,6 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProgress();
     
     // Listen for progress updates from MissionControl
@@ -46,6 +46,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: 'crm', label: 'Database Prospek', icon: Users, shortcut: 'Ctrl+2' },
     { id: 'finance', label: 'Finance & Perf.', icon: LineChart, shortcut: 'Ctrl+3' },
     { id: 'pricing', label: 'Pricing Packages', icon: Tag, shortcut: 'Ctrl+4' },
+    { id: 'pipeline', label: 'Pipeline Architect', icon: GitMerge, shortcut: 'Ctrl+5' },
   ];
 
   useEffect(() => {
@@ -69,9 +70,11 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       <div className={`hidden md:block border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
         <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
           <div className="relative shrink-0">
-            <img
+            <Image
               src="/logo.png"
               alt="WelliBuilds"
+              width={56}
+              height={56}
               className={`rounded-xl object-contain transition-all duration-300 ${isOpen ? 'w-14 h-14' : 'w-11 h-11'}`}
             />
             {/* Subtle glow behind logo */}
