@@ -51,7 +51,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   ];
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
+    const media = window.matchMedia('(max-width: 1023px)');
     const handleChange = () => {
       if (media.matches) setIsOpen(false);
     };
@@ -64,11 +64,11 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     <aside
       className={`bg-[#0a0a0a]/90 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out z-50
       fixed bottom-0 left-0 right-0 h-16 border-t border-white/5 flex flex-row
-      md:bg-[#0a0a0a]/40 md:relative md:flex-col md:h-full md:border-t-0 md:border-r 
-      ${isOpen ? 'md:w-64' : 'md:w-[68px]'}`}
+      lg:bg-[#0a0a0a]/40 lg:relative lg:flex-col lg:h-full lg:border-t-0 lg:border-r 
+      ${isOpen ? 'lg:w-64' : 'lg:w-[68px]'}`}
     >
       {/* Branding */}
-      <div className={`hidden md:block border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
+      <div className={`hidden lg:block border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>
         <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
           <div className="relative shrink-0">
             <Image
@@ -139,14 +139,14 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 flex flex-row items-center justify-around w-full p-2 md:flex-col md:justify-start md:space-y-1 ${isOpen ? 'md:p-3' : 'md:p-2'}`}>
+      <nav className={`flex-1 flex flex-row items-center justify-around w-full p-2 lg:flex-col lg:justify-start lg:space-y-1 ${isOpen ? 'lg:p-3' : 'lg:p-2'}`}>
         <AnimatePresence>
           {isOpen && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="hidden md:block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3"
+              className="hidden lg:block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3"
             >
               Menu
             </motion.p>
@@ -160,8 +160,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               <button
                 onClick={() => setActiveTab(item.id)}
                 className={`relative flex items-center justify-center rounded-lg transition-all duration-200 
-                  w-12 h-12 md:w-full md:h-auto
-                  ${isOpen ? 'md:justify-start md:gap-3 md:px-3 md:py-2.5' : 'md:justify-center md:px-2 md:py-2.5'} 
+                  w-12 h-12 lg:w-full lg:h-auto
+                  ${isOpen ? 'lg:justify-start lg:gap-3 lg:px-3 lg:py-2.5' : 'lg:justify-center lg:px-2 lg:py-2.5'} 
                   ${isActive
                     ? 'text-orange-400'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -180,7 +180,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 {isActive && (
                   <motion.div
                     layoutId="activeGlowBar"
-                    className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                    className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -189,7 +189,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 {isActive && (
                   <motion.div
                     layoutId="activeGlowBarMobile"
-                    className="md:hidden absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+                    className="lg:hidden absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.6)]"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -201,7 +201,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="hidden md:block relative z-10 font-medium text-sm"
+                      className="hidden lg:block relative z-10 font-medium text-sm"
                     >
                       {item.label}
                     </motion.span>
@@ -212,17 +212,17 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               {/* Tooltip on hover */}
               <div className={`absolute pointer-events-none px-2.5 py-1.5 bg-[#1a1a1a]/90 backdrop-blur-sm border border-white/10 text-white text-xs font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50
                   bottom-full left-1/2 -translate-x-1/2 mb-2
-                  md:bottom-auto md:left-full md:top-1/2 md:-translate-y-1/2 md:-translate-x-0 md:ml-2
-                  ${isOpen ? 'md:hidden' : ''}
+                  lg:bottom-auto lg:left-full lg:top-1/2 lg:-translate-y-1/2 lg:-translate-x-0 lg:ml-2
+                  ${isOpen ? 'lg:hidden' : ''}
                 `}>
                 <span>{item.label}</span>
-                <span className="hidden md:inline ml-2 text-[10px] font-mono text-gray-400">{item.shortcut}</span>
+                <span className="hidden lg:inline ml-2 text-[10px] font-mono text-gray-400">{item.shortcut}</span>
 
                 {/* Arrow Mobile */}
-                <div className="md:hidden absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-t-[5px] border-t-[#1a1a1a]/90 border-r-[5px] border-r-transparent" />
+                <div className="lg:hidden absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-t-[5px] border-t-[#1a1a1a]/90 border-r-[5px] border-r-transparent" />
 
                 {/* Arrow Desktop */}
-                <div className="hidden md:block absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
+                <div className="hidden lg:block absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-r-[5px] border-r-[#1a1a1a]/90 border-b-[5px] border-b-transparent" />
               </div>
             </div>
           );
@@ -230,7 +230,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className={`hidden md:flex flex-col border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
+      <div className={`hidden lg:flex flex-col border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
         <InstallPwaButton isOpen={isOpen} />
         {/* Collapse toggle */}
         <button

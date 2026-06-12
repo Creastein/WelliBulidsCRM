@@ -75,11 +75,11 @@ export default function AppShell() {
         animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.8, delay: 2.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Suspense fallback={<div className="hidden md:block w-[68px] sm:w-64 h-full bg-[#0a0a0a]/40 border-r border-white/5 animate-pulse" />}>
+        <Suspense fallback={<div className="hidden lg:block w-[68px] lg:w-64 h-full bg-[#0a0a0a]/40 border-r border-white/5 animate-pulse" />}>
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </Suspense>
 
-        <main className="flex-1 overflow-y-auto w-full pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto w-full pb-16 lg:pb-0">
           <Suspense fallback={<FallbackLoader />}>
             {activeTab === 'mission-control' && <MissionControl />}
             {activeTab === 'crm' && <DatabaseProspek />}
