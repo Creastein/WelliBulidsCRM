@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Bungee_Spice, Medula_One } from "next/font/google";
 import "./globals.css";
 
@@ -26,9 +26,27 @@ const medula = Medula_One({
   weight: "400",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0a0a0a",
+};
+
 export const metadata: Metadata = {
   title: "WelliBuilds CRM",
   description: "WelliBuilds CRM Dashboard for Lead Management",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WelliBuilds",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
