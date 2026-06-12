@@ -144,39 +144,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const googleMapsUrl = body.googleMapsUrl?.trim();
       const address = body.address?.trim();
 
-      // Fetch all active records to perform duplicate detection
-      const { data: allLeads, error: fetchError } = await supabase
-        .from('leads')
-        .select('*');
-
-      if (fetchError) {
-        return res.status(500).json({ success: false, message: 'Database query error', error: fetchError.message });
-      }
-
-      const existingLeads = (allLeads || []).map(deserializeLead);
-
-      // 1. Check strong duplicate by Google Maps URL
+      // 1. Check strong duplicate by Google Maps URL (DB-level — fast, no full scan needed)
       if (googleMapsUrl) {
-        const dupGmaps = existingLeads.find(
-          l => l.notes.includes(googleMapsUrl) || (allLeads?.find(db => db.google_maps_url === googleMapsUrl))
-        );
-        if (dupGmaps) {
+        const { data: gmapsDup } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('google_maps_url', googleMapsUrl)
+          .limit(1)
+          .single();
+
+        if (gmapsDup) {
           return res.status(200).json({
             success: true,
             duplicate: true,
             duplicateType: 'strong_gmaps',
             message: 'Prospect already exists (matched by Google Maps URL)',
-            prospectId: dupGmaps.id,
+            prospectId: gmapsDup.id,
           });
         }
       }
 
+      // Fetch all active records — needed for name/address duplicate check and soft duplicate
+      const { data: allLeads, error: fetchError } = await supabase
+        .from('leads')
+        .select('id, name, business_name, address')
+        .is('deleted_at', null);
+
+      if (fetchError) {
+        return res.status(500).json({ success: false, message: 'Database query error', error: fetchError.message });
+      }
+
       // 2. Check strong duplicate by Name + Address
       if (address) {
-        const dupNameAddress = existingLeads.find(
-          l =>
-            l.businessName.toLowerCase() === businessNameNormalized.toLowerCase() &&
-            allLeads?.find(db => db.id === l.id && db.address === address)
+        const dupNameAddress = (allLeads || []).find(
+          db =>
+            (db.business_name || db.name || '').toLowerCase() === businessNameNormalized.toLowerCase() &&
+            db.address === address
         );
         if (dupNameAddress) {
           return res.status(200).json({
@@ -192,20 +195,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 3. Check soft duplicate by similar name (warning only)
       let warningMessage: string | undefined = undefined;
       const normalizedNewName = businessNameNormalized.toLowerCase().replace(/[^a-z0-9]/g, '');
-      
+
       if (normalizedNewName.length >= 4) {
-        const similarLead = existingLeads.find(l => {
-          const normExisting = l.businessName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const similarLead = (allLeads || []).find(db => {
+          const normExisting = (db.business_name || db.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
           return normExisting.includes(normalizedNewName) || normalizedNewName.includes(normExisting);
         });
 
         if (similarLead) {
-          warningMessage = `Warning: A prospect with a highly similar name already exists (ID: ${similarLead.id}, Name: ${similarLead.businessName}). Created anyway.`;
+          warningMessage = `Warning: A prospect with a highly similar name already exists (ID: ${similarLead.id}, Name: ${similarLead.business_name || similarLead.name}). Created anyway.`;
         }
       }
 
-      // Map ApiLead request object to Supabase row & serialize extra metadata
-      const mappedLead: Partial<ApiLead> = {
+      // Map ApiLead request to DB row via serializeLead (handles all field mapping)
+      const { dbRow } = serializeLead({
         name,
         businessName: businessNameNormalized,
         category: body.category,
@@ -229,26 +232,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         proposalStatus: body.proposalStatus,
         accStatus: body.accStatus,
         followUpCount: body.followUpCount,
-      };
+      }, body.notes);
 
-      const { dbRow } = serializeLead(mappedLead, body.notes);
-
-      // Inject other DB columns that are directly supported in supabase table schema
-      dbRow.address = address || null;
+      // Extra columns not part of ApiLead shape
+      dbRow.address         = address || null;
       dbRow.google_maps_url = googleMapsUrl || null;
-      dbRow.website_url = body.website || null;
-      dbRow.instagram_url = body.instagram || null;
-      dbRow.phone = body.whatsapp || null;
-      dbRow.rating = null;
-      dbRow.review_count = null;
-      dbRow.website_status = null;
-      dbRow.digital_presence_issue = body.painPoint || null;
-      dbRow.suitable_offer = body.offerFit || null;
-      dbRow.prospect_score = body.score || null;
-      dbRow.source = body.source || 'agent';
-      dbRow.created_by = body.assignedTo.toLowerCase() || 'agent';
-      dbRow.priority = 'Medium';
-      dbRow.created_at = new Date().toISOString();
+      dbRow.rating          = null;
+      dbRow.review_count    = null;
+      dbRow.website_status  = null;
+      dbRow.created_by      = (body.assignedTo || 'agent').toLowerCase();
+      dbRow.priority        = 'Medium';
+      dbRow.created_at      = new Date().toISOString();
 
       // Insert new lead
       const { data: insertedData, error: insertError } = await supabase

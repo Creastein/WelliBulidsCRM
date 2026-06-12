@@ -119,19 +119,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         followUpCount: body.followUpCount !== undefined ? body.followUpCount : currentLead.followUpCount,
       };
 
-      // Serialize new merged values back into DB row notes and fields
+      // Serialize merged values back into DB row
       const { dbRow } = serializeLead(mergedLead, mergedLead.notes);
 
-      // Inject other direct DB columns
-      if (body.address !== undefined) dbRow.address = body.address;
-      if (body.googleMapsUrl !== undefined) dbRow.google_maps_url = body.googleMapsUrl;
-      if (body.website !== undefined) dbRow.website_url = body.website;
-      if (body.instagram !== undefined) dbRow.instagram_url = body.instagram;
-      if (body.whatsapp !== undefined) dbRow.phone = body.whatsapp;
-      if (body.painPoint !== undefined) dbRow.digital_presence_issue = body.painPoint;
-      if (body.offerFit !== undefined) dbRow.suitable_offer = body.offerFit;
-      if (body.score !== undefined) dbRow.prospect_score = body.score;
-      if (body.source !== undefined) dbRow.source = body.source;
+      // Extra direct DB columns not part of ApiLead shape
+      if (body.address !== undefined)       dbRow.address         = body.address;
+      if (body.googleMapsUrl !== undefined)  dbRow.google_maps_url = body.googleMapsUrl;
 
       // Update in DB
       const { data: updatedData, error: updateError } = await supabase

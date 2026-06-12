@@ -49,8 +49,6 @@ export function verifyAgentAuth(req: VercelRequest): boolean {
     .map(t => t?.trim())
     .filter((t): t is string => !!t);
 
-  // If GREG_AGENT_TOKEN is configured in local file but not processed yet,
-  // we can also read GREG_AGENT_TOKEN which is often in env already.
   return validTokens.includes(receivedToken);
 }
 
@@ -66,127 +64,153 @@ export function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-// Delimiters
+// ---------------------------------------------------------------------------
+// Legacy constants — used only in deserializeLead's backward-compat fallback.
+// Remove after verifying all rows have been migrated via 002_migrate_metadata_from_notes.sql.
+// ---------------------------------------------------------------------------
 const METADATA_START = '--- AGENT_METADATA_JSON ---';
 const METADATA_END = '--- END_AGENT_METADATA_JSON ---';
 
-// Metadata serialization helper
-export function serializeLead(apiData: Partial<ApiLead>, existingNotes: string = ''): {
-  dbRow: any;
-  metadata: Record<string, any>;
+/**
+ * Extract legacy JSON metadata embedded in the notes text.
+ * Returns { cleanNotes, metadata } — used as a fallback when new DB columns are null.
+ */
+function extractLegacyMetadata(notesText: string): {
+  cleanNotes: string;
+  metadata: Record<string, unknown>;
 } {
-  // Strip old metadata from existingNotes if present
-  let cleanNotes = existingNotes;
-  const startIndex = cleanNotes.indexOf(METADATA_START);
-  const endIndex = cleanNotes.indexOf(METADATA_END);
-  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-    cleanNotes = (
-      cleanNotes.slice(0, startIndex) + cleanNotes.slice(endIndex + METADATA_END.length)
-    ).trim();
-  } else {
-    cleanNotes = cleanNotes.trim();
-  }
-
-  // If user provided a new 'notes' field in API request, let's use that as base notes
-  if (apiData.notes !== undefined) {
-    cleanNotes = apiData.notes.trim();
-  }
-
-  // Extra metadata fields to serialize
-  const metadata: Record<string, any> = {
-    email: apiData.email ?? null,
-    assignedTo: apiData.assignedTo ?? 'Well',
-    estimatedValue: apiData.estimatedValue !== undefined ? apiData.estimatedValue : null,
-    draftStatus: apiData.draftStatus ?? 'new',
-    auditStatus: apiData.auditStatus ?? 'new',
-    proposalStatus: apiData.proposalStatus ?? 'new',
-    accStatus: apiData.accStatus ?? 'new',
-    followUpCount: apiData.followUpCount ?? 0,
-    lastContactedAt: apiData.lastContactedAt ?? null,
-    archivedAt: apiData.archivedAt ?? null,
-    deletedAt: apiData.deletedAt ?? null,
-  };
-
-  // Build notes string containing metadata JSON block
-  const notesWithMetadata = `${cleanNotes}\n\n${METADATA_START}\n${JSON.stringify(metadata, null, 2)}\n${METADATA_END}`;
-
-  // Map to DB Columns
-  const dbRow: any = {
-    notes: notesWithMetadata,
-    crm_note: notesWithMetadata, // keep both in sync
-  };
-
-  if (apiData.name !== undefined) dbRow.name = apiData.name;
-  if (apiData.businessName !== undefined) dbRow.business_name = apiData.businessName;
-  if (apiData.category !== undefined) {
-    dbRow.niche = apiData.category;
-    dbRow.business_type = apiData.category;
-  }
-  if (apiData.location !== undefined) dbRow.location = apiData.location;
-  if (apiData.instagram !== undefined) dbRow.instagram_url = apiData.instagram;
-  if (apiData.website !== undefined) dbRow.website_url = apiData.website;
-  if (apiData.whatsapp !== undefined) dbRow.phone = apiData.whatsapp;
-  if (apiData.source !== undefined) dbRow.source = apiData.source;
-  if (apiData.painPoint !== undefined) dbRow.digital_presence_issue = apiData.painPoint;
-  if (apiData.offerFit !== undefined) dbRow.suitable_offer = apiData.offerFit;
-  if (apiData.score !== undefined) dbRow.prospect_score = apiData.score;
-  if (apiData.status !== undefined) dbRow.status = apiData.status;
-  if (apiData.nextFollowUpDate !== undefined) dbRow.follow_up_date = apiData.nextFollowUpDate;
-  dbRow.updated_at = new Date().toISOString();
-
-  return { dbRow, metadata };
-}
-
-// Metadata deserialization helper
-export function deserializeLead(dbRow: any): ApiLead {
-  const notesText = dbRow.notes || dbRow.crm_note || '';
-  let cleanNotes = notesText;
-  let metadata: Record<string, any> = {};
-
   const startIndex = notesText.indexOf(METADATA_START);
   const endIndex = notesText.indexOf(METADATA_END);
 
   if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
     const jsonStr = notesText.slice(startIndex + METADATA_START.length, endIndex).trim();
     try {
-      metadata = JSON.parse(jsonStr);
-      // Clean notes representation for the API
-      cleanNotes = (
+      const metadata = JSON.parse(jsonStr) as Record<string, unknown>;
+      const cleanNotes = (
         notesText.slice(0, startIndex) + notesText.slice(endIndex + METADATA_END.length)
       ).trim();
+      return { cleanNotes, metadata };
     } catch (e) {
-      console.error('Error parsing metadata block for lead id', dbRow.id, e);
+      console.error('Legacy metadata parse error:', e);
     }
   }
 
-  return {
-    id: dbRow.id,
-    name: dbRow.name || '',
-    businessName: dbRow.business_name || dbRow.name || '',
-    category: dbRow.business_type || dbRow.niche || 'Uncategorized',
-    location: dbRow.location || '',
-    instagram: dbRow.instagram_url || '',
-    website: dbRow.website_url || '',
-    whatsapp: dbRow.phone || '',
-    email: metadata.email || '',
-    source: dbRow.source || 'manual',
-    painPoint: dbRow.digital_presence_issue || '',
-    offerFit: dbRow.suitable_offer || '',
-    score: dbRow.prospect_score !== undefined ? dbRow.prospect_score : null,
-    status: dbRow.status || 'new',
-    nextFollowUpDate: dbRow.follow_up_date || null,
-    lastContactedAt: metadata.lastContactedAt || null,
+  return { cleanNotes: notesText.trim(), metadata: {} };
+}
+
+/**
+ * serializeLead — maps an ApiLead partial object to a Supabase DB row.
+ *
+ * Metadata fields (email, assignedTo, etc.) now map directly to dedicated
+ * DB columns instead of being embedded in the `notes` text.
+ */
+export function serializeLead(
+  apiData: Partial<ApiLead>,
+  existingNotes: string = ''
+): { dbRow: Record<string, unknown> } {
+  // Determine the clean notes value (strip legacy JSON block if still present)
+  let cleanNotes: string;
+  if (apiData.notes !== undefined) {
+    // If caller provides new notes, strip any legacy metadata block from it
+    cleanNotes = extractLegacyMetadata(apiData.notes).cleanNotes;
+  } else {
+    // Otherwise strip legacy block from existing notes
+    cleanNotes = extractLegacyMetadata(existingNotes).cleanNotes;
+  }
+
+  // Build the DB row — metadata fields go into dedicated columns now
+  const dbRow: Record<string, unknown> = {
     notes: cleanNotes,
-    estimatedValue: metadata.estimatedValue !== undefined ? metadata.estimatedValue : null,
-    assignedTo: metadata.assignedTo || 'Well',
-    draftStatus: metadata.draftStatus || 'new',
-    auditStatus: metadata.auditStatus || 'new',
-    proposalStatus: metadata.proposalStatus || 'new',
-    accStatus: metadata.accStatus || 'new',
-    followUpCount: metadata.followUpCount !== undefined ? metadata.followUpCount : 0,
-    createdAt: dbRow.created_at || dbRow.created_at || new Date().toISOString(),
-    updatedAt: dbRow.updated_at || new Date().toISOString(),
-    archivedAt: metadata.archivedAt || null,
-    deletedAt: metadata.deletedAt || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Core lead fields
+  if (apiData.name !== undefined)         dbRow.name                    = apiData.name;
+  if (apiData.businessName !== undefined) dbRow.business_name           = apiData.businessName;
+  if (apiData.category !== undefined) {
+    dbRow.niche         = apiData.category;
+    dbRow.business_type = apiData.category;
+  }
+  if (apiData.location !== undefined)       dbRow.location               = apiData.location;
+  if (apiData.instagram !== undefined)      dbRow.instagram_url          = apiData.instagram;
+  if (apiData.website !== undefined)        dbRow.website_url            = apiData.website;
+  if (apiData.whatsapp !== undefined)       dbRow.phone                  = apiData.whatsapp;
+  if (apiData.source !== undefined)         dbRow.source                 = apiData.source;
+  if (apiData.painPoint !== undefined)      dbRow.digital_presence_issue = apiData.painPoint;
+  if (apiData.offerFit !== undefined)       dbRow.suitable_offer         = apiData.offerFit;
+  if (apiData.score !== undefined)          dbRow.prospect_score         = apiData.score;
+  if (apiData.status !== undefined)         dbRow.status                 = apiData.status;
+  if (apiData.nextFollowUpDate !== undefined) dbRow.follow_up_date       = apiData.nextFollowUpDate;
+
+  // Metadata fields — now stored in dedicated DB columns
+  if (apiData.email !== undefined)          dbRow.email                  = apiData.email ?? null;
+  if (apiData.assignedTo !== undefined)     dbRow.assigned_to            = apiData.assignedTo ?? 'Well';
+  if (apiData.estimatedValue !== undefined) dbRow.estimated_value        = apiData.estimatedValue ?? null;
+  if (apiData.draftStatus !== undefined)    dbRow.draft_status           = apiData.draftStatus ?? 'new';
+  if (apiData.auditStatus !== undefined)    dbRow.audit_status           = apiData.auditStatus ?? 'new';
+  if (apiData.proposalStatus !== undefined) dbRow.proposal_status        = apiData.proposalStatus ?? 'new';
+  if (apiData.accStatus !== undefined)      dbRow.acc_status             = apiData.accStatus ?? 'new';
+  if (apiData.followUpCount !== undefined)  dbRow.follow_up_count        = apiData.followUpCount ?? 0;
+  if (apiData.lastContactedAt !== undefined) dbRow.last_contacted_at     = apiData.lastContactedAt ?? null;
+  if (apiData.archivedAt !== undefined)     dbRow.archived_at            = apiData.archivedAt ?? null;
+  if (apiData.deletedAt !== undefined)      dbRow.deleted_at             = apiData.deletedAt ?? null;
+
+  return { dbRow };
+}
+
+/**
+ * deserializeLead — maps a Supabase DB row to an ApiLead object.
+ *
+ * Primary source: dedicated DB columns.
+ * Fallback: legacy JSON embedded in `notes` (for rows not yet migrated via SQL script).
+ * The fallback can be removed once 002_migrate_metadata_from_notes.sql has been run
+ * and all data is verified.
+ */
+export function deserializeLead(dbRow: Record<string, unknown>): ApiLead {
+  const notesText = String(dbRow.notes || dbRow.crm_note || '');
+
+  // Backward-compat: extract legacy JSON block if new columns are not populated yet
+  const { cleanNotes, metadata: legacyMeta } = extractLegacyMetadata(notesText);
+
+  // Helper: prefer DB column value, fall back to legacy JSON field
+  function col<T>(dbValue: unknown, legacyValue: unknown, defaultValue: T): T {
+    if (dbValue !== null && dbValue !== undefined) return dbValue as T;
+    if (legacyValue !== null && legacyValue !== undefined) return legacyValue as T;
+    return defaultValue;
+  }
+
+  return {
+    id:               dbRow.id as number,
+    name:             String(dbRow.name || ''),
+    businessName:     String(dbRow.business_name || dbRow.name || ''),
+    category:         String(dbRow.business_type || dbRow.niche || 'Uncategorized'),
+    location:         String(dbRow.location || ''),
+    instagram:        String(dbRow.instagram_url || ''),
+    website:          String(dbRow.website_url || ''),
+    whatsapp:         String(dbRow.phone || ''),
+    source:           String(dbRow.source || 'manual'),
+    painPoint:        String(dbRow.digital_presence_issue || ''),
+    offerFit:         String(dbRow.suitable_offer || ''),
+    score:            dbRow.prospect_score !== undefined && dbRow.prospect_score !== null
+                        ? Number(dbRow.prospect_score)
+                        : null,
+    status:           String(dbRow.status || 'new'),
+    nextFollowUpDate: (dbRow.follow_up_date as string | null) ?? null,
+    notes:            cleanNotes,
+    createdAt:        String(dbRow.created_at || new Date().toISOString()),
+    updatedAt:        String(dbRow.updated_at || new Date().toISOString()),
+
+    // Metadata — read from dedicated columns, fallback to legacy JSON
+    email:          String(col(dbRow.email,          legacyMeta.email,          '')),
+    assignedTo:     String(col(dbRow.assigned_to,    legacyMeta.assignedTo,    'Well')),
+    estimatedValue: col(dbRow.estimated_value,        legacyMeta.estimatedValue, null) as number | null,
+    draftStatus:    String(col(dbRow.draft_status,   legacyMeta.draftStatus,   'new')),
+    auditStatus:    String(col(dbRow.audit_status,   legacyMeta.auditStatus,   'new')),
+    proposalStatus: String(col(dbRow.proposal_status, legacyMeta.proposalStatus, 'new')),
+    accStatus:      String(col(dbRow.acc_status,     legacyMeta.accStatus,     'new')),
+    followUpCount:  Number(col(dbRow.follow_up_count, legacyMeta.followUpCount, 0)),
+    lastContactedAt: (col(dbRow.last_contacted_at,   legacyMeta.lastContactedAt, null) as string | null),
+    archivedAt:     (col(dbRow.archived_at,          legacyMeta.archivedAt,    null) as string | null),
+    deletedAt:      (col(dbRow.deleted_at,           legacyMeta.deletedAt,     null) as string | null),
   };
 }

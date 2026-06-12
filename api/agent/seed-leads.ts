@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    if (req.method !== 'POST' && req.method !== 'GET') {
+    if (req.method !== 'POST') {
       return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
@@ -137,23 +137,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const { dbRow } = serializeLead(lead, lead.notes);
-      
-      // Inject direct DB columns
-      dbRow.address = lead.location;
+
+      // Extra columns not part of ApiLead shape
+      dbRow.address         = lead.location ?? null;
       dbRow.google_maps_url = `https://maps.google.com/?q=${encodeURIComponent(lead.name || '')}`;
-      dbRow.website_url = lead.website || null;
-      dbRow.instagram_url = lead.instagram || null;
-      dbRow.phone = lead.whatsapp || null;
-      dbRow.rating = 4.5;
-      dbRow.review_count = 24;
-      dbRow.website_status = lead.website ? 'outdated' : 'no_website';
-      dbRow.digital_presence_issue = lead.painPoint || null;
-      dbRow.suitable_offer = lead.offerFit || null;
-      dbRow.prospect_score = lead.score || null;
-      dbRow.source = 'seed';
-      dbRow.created_by = lead.assignedTo?.toLowerCase() || 'seed';
-      dbRow.priority = 'Medium';
-      dbRow.created_at = new Date().toISOString();
+      dbRow.rating          = 4.5;
+      dbRow.review_count    = 24;
+      dbRow.website_status  = lead.website ? 'outdated' : 'no_website';
+      dbRow.created_by      = (lead.assignedTo || 'seed').toLowerCase();
+      dbRow.priority        = 'Medium';
+      dbRow.created_at      = new Date().toISOString();
 
       const { data: insertedData, error: insertError } = await supabase
         .from('leads')
