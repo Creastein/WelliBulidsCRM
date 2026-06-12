@@ -206,7 +206,7 @@ export const DEFAULT_PROGRESS: ProgressData = {
     target: 10000000,
     current: 0,
     clientsNeeded: 4,
-    targetDate: '2026-04-26T00:00:00+07:00', // 2 bulan dari ~26 Feb 2026
+    targetDate: '2026-07-12T00:00:00+07:00', // 30 hari dari 12 Juni 2026
     avgDealValue: 2500000,
 };
 
