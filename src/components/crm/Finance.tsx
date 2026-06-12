@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -27,9 +29,9 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { fetchLeads } from '../services/leadsService';
-import { fetchWeeklyReviews, upsertWeeklyReview } from '../services/weeklyReviewService';
-import { fetchProgress, saveProgress } from '../services/progressService';
+import { fetchLeads } from '@/services/leadsService';
+import { fetchWeeklyReviews, upsertWeeklyReview } from '@/services/weeklyReviewService';
+import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
   DEFAULT_WEEKLY_REVIEWS,
   DEFAULT_MILESTONES,
@@ -38,7 +40,7 @@ import {
   type WeeklyReview,
   type ProgressData,
   type Lead,
-} from '../data/dataDefaults';
+} from '@/data/dataDefaults';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -156,14 +158,16 @@ export default function Finance() {
   const chartData = useMemo(() => {
     const sortedWeeks = [...weeklyReviews].sort((a, b) => a.week - b.week);
     let cumulative = 0;
-    return sortedWeeks.map(w => {
+    const result = [];
+    for (const w of sortedWeeks) {
       cumulative += w.revenue;
-      return {
+      result.push({
         ...w,
         name: `Week ${w.week}`,
         cumulativeRevenue: cumulative,
-      };
-    });
+      });
+    }
+    return result;
   }, [weeklyReviews]);
 
   const startEditWeek = (week: WeeklyReview) => {

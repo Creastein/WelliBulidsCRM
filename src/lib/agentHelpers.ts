@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Define the API Lead shape
@@ -34,8 +34,8 @@ export interface ApiLead {
 }
 
 // Bearer Token Authentication
-export function verifyAgentAuth(req: VercelRequest): boolean {
-  const authHeader = req.headers.authorization || '';
+export function verifyAgentAuth(req: Request | NextRequest): boolean {
+  const authHeader = req.headers.get('authorization') || '';
   const receivedToken = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!authHeader || !receivedToken) return false;
 
@@ -54,7 +54,7 @@ export function verifyAgentAuth(req: VercelRequest): boolean {
 
 // Supabase client initialization
 export function getSupabaseClient() {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {

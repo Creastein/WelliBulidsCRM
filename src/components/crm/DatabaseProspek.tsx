@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
@@ -69,8 +71,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { fetchLeads, createLead, updateLead, deleteLead } from '../services/leadsService';
-import { DEFAULT_NICHES, type Lead, type NicheCategory } from '../data/dataDefaults';
+import { fetchLeads, createLead, updateLead, deleteLead } from '@/services/leadsService';
+import { DEFAULT_NICHES, type Lead, type NicheCategory } from '@/data/dataDefaults';
 
 const containerVariants = {
   hidden: { opacity: 0 },

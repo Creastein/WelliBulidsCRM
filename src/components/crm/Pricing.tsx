@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from 'framer-motion';
 import { Check, CheckCircle2, Crown, Info, Plus, Star, Tag, Wrench, Zap } from 'lucide-react';
 

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -22,9 +24,9 @@ import {
   Flame,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { fetchLeads } from '../services/leadsService';
-import { fetchKpi } from '../services/kpiService';
-import { fetchProgress, saveProgress } from '../services/progressService';
+import { fetchLeads } from '@/services/leadsService';
+import { fetchKpi } from '@/services/kpiService';
+import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
   DEFAULT_KPI,
   DEFAULT_LEADS,
@@ -32,7 +34,7 @@ import {
   type KpiItem,
   type Lead,
   type ProgressData,
-} from '../data/dataDefaults';
+} from '@/data/dataDefaults';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   MessageSquare,
@@ -593,7 +595,7 @@ export default function Dashboard() {
                       </div>
 
                       {lead.notes && (
-                        <p className="text-xs text-gray-500 mt-2 line-clamp-1 italic">"{lead.notes}"</p>
+                        <p className="text-xs text-gray-500 mt-2 line-clamp-1 italic">&quot;{lead.notes}&quot;</p>
                       )}
                     </motion.div>
                   ))}

@@ -1,21 +1,16 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   verifyAgentAuth,
   getSupabaseClient,
   serializeLead,
-  deserializeLead,
   ApiLead,
-} from '../_utils/agentHelpers';
+} from '@/lib/agentHelpers';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Request
     if (!verifyAgentAuth(req)) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = getSupabaseClient();
@@ -26,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select('name');
 
     if (fetchError) {
-      return res.status(500).json({ success: false, message: 'Failed to fetch existing leads', error: fetchError.message });
+      return NextResponse.json({ success: false, message: 'Failed to fetch existing leads', error: fetchError.message }, { status: 500 });
     }
 
     const existingNames = new Set((existingDbLeads || []).map(l => l.name.toLowerCase().trim()));
@@ -161,16 +156,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       message: 'Seeding finished',
       insertedCount: insertedIds.length,
       insertedIds,
       skippedCount: skippedNames.length,
       skippedNames,
-    });
+    }, { status: 200 });
   } catch (error: any) {
     console.error('Seeding Error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+    return NextResponse.json({ success: false, message: 'Internal server error', error: error.message }, { status: 500 });
   }
 }

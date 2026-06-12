@@ -1,20 +1,16 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   verifyAgentAuth,
   getSupabaseClient,
   deserializeLead,
   ApiLead,
-} from '../_utils/agentHelpers';
+} from '@/lib/agentHelpers';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function GET(req: NextRequest) {
   try {
     // 1. Authenticate Request
     if (!verifyAgentAuth(req)) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    if (req.method !== 'GET') {
-      return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = getSupabaseClient();
@@ -25,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select('*');
 
     if (error) {
-      return res.status(500).json({ success: false, message: 'Database error', error: error.message });
+      return NextResponse.json({ success: false, message: 'Database error', error: error.message }, { status: 500 });
     }
 
     // Deserialize all leads
@@ -92,9 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Sum estimated pipeline value robustly
     const pipelineValue = activeLeads.reduce((sum, lead) => {
       if (['lost', 'ditolak', 'won', 'deal'].includes(lead.status.toLowerCase())) {
-        // Exclude closed deals from active pipeline value, or include them if preferred?
-        // Standard practice: Pipeline value is active pipeline (excluding won/lost),
-        // let's sum won + active pipeline value to be robust or just sum all active values.
+        // Exclude closed deals from active pipeline value
         return sum; 
       }
       return sum + (lead.estimatedValue || 0);
@@ -114,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       byAssignedTo[agentKey] = (byAssignedTo[agentKey] || 0) + 1;
     });
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       data: {
         totalLeads,
@@ -130,9 +124,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         byStatus,
         byAssignedTo,
       },
-    });
+    }, { status: 200 });
   } catch (error: any) {
     console.error('API Metrics Error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+    return NextResponse.json({ success: false, message: 'Internal server error', error: error.message }, { status: 500 });
   }
 }

@@ -1,15 +1,20 @@
-import React, { useState, lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
-const Sidebar = lazy(() => import('./components/Sidebar'));
-const MissionControl = lazy(() => import('./components/MissionControl'));
-const DatabaseProspek = lazy(() => import('./components/DatabaseProspek'));
-const Finance = lazy(() => import('./components/Finance'));
-const Pricing = lazy(() => import('./components/Pricing'));
-import { Toaster } from 'react-hot-toast';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import CinematicLoader from './components/CinematicLoader';
+"use client";
 
-const GradientBackground = lazy(() => import('./components/GradientBackground'));
+import React, { useState, lazy, Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
+import { Toaster } from 'react-hot-toast';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import Sidebar from './Sidebar';
+import CinematicLoader from '../crm/CinematicLoader';
+
+const MissionControl = lazy(() => import('../crm/MissionControl'));
+const DatabaseProspek = lazy(() => import('../crm/DatabaseProspek'));
+const Finance = lazy(() => import('../crm/Finance'));
+const Pricing = lazy(() => import('../crm/Pricing'));
+
+// Three.js / shadergradient components must be disabled for SSR as they access browser APIs like canvas and window
+const GradientBackground = dynamic(() => import('../crm/GradientBackground'), { ssr: false });
 
 const FallbackLoader = () => (
   <div className="flex-1 flex items-center justify-center min-h-screen">
@@ -20,7 +25,7 @@ const FallbackLoader = () => (
   </div>
 );
 
-export default function App() {
+export default function AppShell() {
   const [activeTab, setActiveTab] = useState('mission-control');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
@@ -78,6 +83,8 @@ export default function App() {
             {activeTab === 'crm' && <DatabaseProspek />}
             {activeTab === 'finance' && <Finance />}
             {activeTab === 'pricing' && <Pricing />}
+            {/* TODO: Pipeline Architect — enable after CRM migration is verified */}
+            {/* activeTab === 'pipeline' && <PipelineArchitect /> */}
           </Suspense>
           <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>

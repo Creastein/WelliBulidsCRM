@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 type ShortcutCallback = () => void;
 
@@ -7,7 +6,7 @@ interface ShortcutMap {
   [key: string]: ShortcutCallback;
 }
 
-export function useKeyboardShortcuts(shortcuts: ShortcutMap, deps: any[] = []) {
+export function useKeyboardShortcuts(shortcuts: ShortcutMap, deps: React.DependencyList = []) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs/textareas

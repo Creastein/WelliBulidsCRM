@@ -1,9 +1,10 @@
+"use client";
+
 import React, { useMemo, useEffect } from 'react';
 import { LayoutDashboard, Users, LineChart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocalStorage } from '../hooks/useLocalStorage'; // Kept if needed elsewhere, though can be removed if unused.
-import { DEFAULT_PROGRESS, type ProgressData } from '../data/dataDefaults';
-import { fetchProgress } from '../services/progressService';
+import { DEFAULT_PROGRESS, type ProgressData } from '@/data/dataDefaults';
+import { fetchProgress } from '@/services/progressService';
 
 interface SidebarProps {
   activeTab: string;
@@ -24,6 +25,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProgress();
     
     // Listen for progress updates from MissionControl
@@ -59,9 +61,9 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
     <aside
       className={`bg-[#0a0a0a]/90 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out z-50
-        fixed bottom-0 left-0 right-0 h-16 border-t border-white/5 flex flex-row
-        md:bg-[#0a0a0a]/40 md:relative md:flex-col md:h-full md:border-t-0 md:border-r 
-        ${isOpen ? 'md:w-64' : 'md:w-[68px]'}`}
+      fixed bottom-0 left-0 right-0 h-16 border-t border-white/5 flex flex-row
+      md:bg-[#0a0a0a]/40 md:relative md:flex-col md:h-full md:border-t-0 md:border-r 
+      ${isOpen ? 'md:w-64' : 'md:w-[68px]'}`}
     >
       {/* Branding */}
       <div className={`hidden md:block border-b border-white/5 ${isOpen ? 'p-5' : 'p-3'}`}>

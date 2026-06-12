@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
@@ -22,21 +22,17 @@ const prospectSchema = z.object({
   status: z.string().optional().default("new_lead"),
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function POST(req: NextRequest) {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-    }
-
     // 1. Validate Authorization Bearer token first
-    const authHeader = req.headers.authorization || "";
+    const authHeader = req.headers.get('authorization') || "";
     const expectedToken = process.env.GREG_AGENT_TOKEN?.trim();
 
     if (!expectedToken) {
-      return res.status(500).json({
+      return NextResponse.json({
         success: false,
         message: "Server configuration error: GREG_AGENT_TOKEN is missing"
-      });
+      }, { status: 500 });
     }
 
     const receivedToken = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -49,30 +45,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         expectedLength: expectedToken.length
       });
 
-      return res.status(401).json({
+      return NextResponse.json({
         success: false,
         message: "Unauthorized"
-      });
+      }, { status: 401 });
     }
 
     // 2. Initialize Supabase after auth passes
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return res.status(500).json({ success: false, message: 'Missing Supabase credentials in API' });
+      return NextResponse.json({ success: false, message: 'Missing Supabase credentials in API' }, { status: 500 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 3. Validate request body
-    const parsedData = prospectSchema.safeParse(req.body);
+    const bodyJson = await req.json();
+    const parsedData = prospectSchema.safeParse(bodyJson);
     if (!parsedData.success) {
-      return res.status(400).json({ 
+      return NextResponse.json({ 
         success: false, 
         message: 'Invalid request data', 
         errors: parsedData.error.format() 
-      });
+      }, { status: 400 });
     }
 
     const data = parsedData.data;
@@ -85,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Helper to update crmNote and status if useful
     const handleDuplicateUpdate = async (existing: any, newNote: string, newStatus: string) => {
-      let updateData: any = {};
+      const updateData: any = {};
       
       // Update status only if it's currently a new_lead/Belum Dihubungi and the new status is different
       if (existing.status === 'Belum Dihubungi' || existing.status === 'new_lead') {
@@ -117,12 +114,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (existingByMap && existingByMap.length > 0) {
       const existing = existingByMap[0];
       await handleDuplicateUpdate(existing, data.crmNote, finalStatus);
-      return res.status(200).json({ 
+      return NextResponse.json({ 
         success: true, 
         duplicate: true, 
         message: 'Prospect already exists (matched by Google Maps URL)', 
         prospectId: existing.id 
-      });
+      }, { status: 200 });
     }
 
     // 5. Check for duplicate by businessName + address
@@ -137,12 +134,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (existingByNameAddress && existingByNameAddress.length > 0) {
         const existing = existingByNameAddress[0];
         await handleDuplicateUpdate(existing, data.crmNote, finalStatus);
-        return res.status(200).json({ 
+        return NextResponse.json({ 
           success: true, 
           duplicate: true, 
           message: 'Prospect already exists (matched by Name and Address)', 
           prospectId: existing.id 
-        });
+        }, { status: 200 });
       }
     }
 
@@ -182,26 +179,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (insertError) {
       console.error('Supabase insert error:', insertError);
-      return res.status(500).json({ 
+      return NextResponse.json({ 
         success: false, 
         message: 'Failed to insert prospect to database',
         error: insertError.message
-      });
+      }, { status: 500 });
     }
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       duplicate: false,
       message: 'Prospect created successfully',
       prospectId: insertedData.id
-    });
+    }, { status: 200 });
 
   } catch (error: any) {
     console.error('API Error:', error);
-    return res.status(500).json({ 
+    return NextResponse.json({ 
       success: false, 
       message: 'Internal server error',
       error: error?.message || 'Unknown error'
-    });
+    }, { status: 500 });
   }
 }
