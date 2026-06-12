@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_PROGRESS, type ProgressData } from '@/data/dataDefaults';
 import { fetchProgress } from '@/services/progressService';
+import InstallPwaButton from './InstallPwaButton';
 
 interface SidebarProps {
   activeTab: string;
@@ -229,7 +230,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className={`hidden md:block border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
+      <div className={`hidden md:flex flex-col border-t border-white/5 ${isOpen ? 'p-3' : 'p-2'}`}>
+        <InstallPwaButton isOpen={isOpen} />
         {/* Collapse toggle */}
         <button
           type="button"
