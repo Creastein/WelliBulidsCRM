@@ -432,6 +432,7 @@
 
 /* ─── Pipeline Architect — Floating Action Button ─── */
 .pipeline-workspace .pa-fab {
+  display: none; /* Hidden on mobile */
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -443,7 +444,6 @@
   border: 1px solid rgba(124,58,237,0.4);
   box-shadow: 0 8px 32px rgba(124,58,237,0.45), 0 0 0 1px rgba(124,58,237,0.15);
   cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
@@ -462,6 +462,9 @@
 }
 
 @media (min-width: 1024px) {
+  .pipeline-workspace .pa-fab {
+    display: flex; /* Visible on desktop */
+  }
   .pipeline-workspace .pa-fab--open {
     opacity: 0;
     pointer-events: none;
@@ -523,17 +526,19 @@
 
 @media (min-width: 1024px) {
   .pipeline-workspace .pa-panel {
-    top: 24px;
-    right: 24px;
-    bottom: 24px;
-    left: auto;
-    width: 420px;
-    height: calc(100vh - 48px);
-    max-height: calc(100vh - 48px);
-    border: 1px solid rgba(124, 58, 237, 0.22);
-    border-radius: 20px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(124, 58, 237, 0.08) inset;
-    animation: panelSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: blur(24px);
+    animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   .pipeline-workspace .pa-panel::before {
@@ -543,7 +548,7 @@
 
 /* ─── Context bar ─── */
 .pipeline-workspace .pa-context-bar {
-  display: flex;
+  display: none; /* Hidden everywhere */
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
@@ -628,7 +633,7 @@
 
 /* ─── Mode pills ─── */
 .pipeline-workspace .pa-modes {
-  display: flex;
+  display: none; /* Hidden everywhere */
   gap: 6px;
   padding: 8px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -667,6 +672,7 @@
 
 /* ─── Mode hint ─── */
 .pipeline-workspace .pa-hint {
+  display: none; /* Hidden everywhere */
   padding: 6px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   font-family: var(--font-mono);
@@ -832,11 +838,16 @@
   margin: 0;
 }
 
-/* Desktop right padding when agent is open */
+/* Lock scrolling and fill screen when agent is open */
 @media (min-width: 1024px) {
-  body.agent-open {
-    padding-right: 444px !important; /* 420px panel + 24px gap */
-    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  body.agent-open main {
+    overflow: hidden !important;
+  }
+  
+  body.agent-open .pipeline-workspace.workspace-layout {
+    height: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 }
 

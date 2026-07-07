@@ -16,6 +16,9 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
+  Reply,
+  Handshake,
   // --- Icons for categories ---
   Building2,
   Hotel,
@@ -352,6 +355,15 @@ export default function DatabaseProspek() {
     return counts;
   }, [leads]);
 
+  // KPI metrics computed from leads data
+  const kpiMetrics = useMemo(() => {
+    const dmCount = leads.length;
+    const replyStatuses = ['Follow Up', 'Negosiasi', 'Deal', 'Ditolak'];
+    const replyCount = leads.filter(l => replyStatuses.includes(l.status)).length;
+    const closingCount = leads.filter(l => l.status === 'Deal').length;
+    return { dmCount, replyCount, closingCount };
+  }, [leads]);
+
   const handleOpenModal = (lead?: Lead) => {
     if (lead) {
       setEditingId(lead.id);
@@ -522,6 +534,37 @@ export default function DatabaseProspek() {
           </div>
         </div>
       </header>
+
+      {/* KPI Metrics Strip */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-3.5 flex items-center gap-3 hover:border-blue-500/20 transition-colors">
+          <div className="p-2 bg-blue-400/10 rounded-lg">
+            <MessageSquare size={18} className="text-blue-400" />
+          </div>
+          <div>
+            <p className="text-lg md:text-xl font-mono font-bold text-white">{kpiMetrics.dmCount}</p>
+            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">DM Terkirim</p>
+          </div>
+        </div>
+        <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-3.5 flex items-center gap-3 hover:border-purple-500/20 transition-colors">
+          <div className="p-2 bg-purple-400/10 rounded-lg">
+            <Reply size={18} className="text-purple-400" />
+          </div>
+          <div>
+            <p className="text-lg md:text-xl font-mono font-bold text-white">{kpiMetrics.replyCount}</p>
+            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Total Reply</p>
+          </div>
+        </div>
+        <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-3.5 flex items-center gap-3 hover:border-emerald-500/20 transition-colors">
+          <div className="p-2 bg-emerald-400/10 rounded-lg">
+            <Handshake size={18} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-lg md:text-xl font-mono font-bold text-white">{kpiMetrics.closingCount}</p>
+            <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Deal / Closing</p>
+          </div>
+        </div>
+      </div>
 
       {/* Horizontal Niche Tabs */}
       <div className="relative">
@@ -875,8 +918,8 @@ export default function DatabaseProspek() {
               );
             })()}
 
-            {/* Table */}
-            <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden">
+            {/* Table View (Desktop & Tablet) */}
+            <div className="hidden md:block bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1032,6 +1075,106 @@ export default function DatabaseProspek() {
                   </motion.tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="block md:hidden space-y-3">
+              {processedLeads.length === 0 ? (
+                <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-8 text-center">
+                  <div className="flex justify-center mb-4">
+                    {(() => {
+                      const EmptyIcon = NICHE_ICONS[DEFAULT_NICHES.find((n) => n.id === activeTab)?.iconName || ''] || Database;
+                      return <EmptyIcon size={40} className="text-gray-600" />;
+                    })()}
+                  </div>
+                  <p className="text-gray-500 font-mono text-sm mb-2">Belum ada prospek di kategori ini</p>
+                  <button
+                    onClick={() => handleOpenModal()}
+                    className="text-xs text-orange-400 hover:text-orange-300 font-mono transition-colors"
+                  >
+                    + Tambah prospek pertama
+                  </button>
+                </div>
+              ) : (
+                processedLeads.map((lead) => (
+                  <div key={lead.id} className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-white text-base">{lead.name}</h4>
+                        <p className="text-xs font-mono text-gray-500 mt-0.5">{lead.location}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[lead.status] || ''}`}>
+                          {lead.status}
+                        </span>
+                        {lead.priority === 'High' ? (
+                          <span className="text-[10px] font-mono text-orange-500 flex items-center gap-1">
+                            <Flame size={12} /> Tinggi
+                          </span>
+                        ) : lead.priority === 'Medium' ? (
+                          <span className="text-[10px] font-mono text-yellow-500 flex items-center gap-1">
+                            <Circle size={8} fill="currentColor" /> Sedang
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-gray-500 flex items-center gap-1">
+                            <Circle size={8} /> Rendah
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {lead.action && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-300 bg-white/5 p-2 rounded-lg">
+                        <ArrowRight size={12} className="text-orange-500" />
+                        <span className="font-mono text-gray-500 mr-1">Action:</span>
+                        <span>{lead.action}</span>
+                      </div>
+                    )}
+
+                    {lead.follow_up_date && (() => {
+                      const fuDate = new Date(lead.follow_up_date);
+                      const now = new Date();
+                      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                      const fuDay = new Date(fuDate.getFullYear(), fuDate.getMonth(), fuDate.getDate());
+                      const isOverdue = fuDay < today;
+                      const isToday = fuDay.getTime() === today.getTime();
+                      const colorClass = isOverdue
+                        ? 'text-red-400 bg-red-500/10 border-red-500/20'
+                        : isToday
+                          ? 'text-orange-400 bg-orange-500/10 border-orange-500/20 animate-pulse'
+                          : 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                      return (
+                        <div className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded border w-fit ${colorClass}`}>
+                          <CalendarDays size={10} />
+                          <span>Follow Up: </span>
+                          <span>{fuDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} {fuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      );
+                    })()}
+
+                    {lead.notes && (
+                      <p className="text-xs text-gray-500 bg-black/20 p-2.5 rounded-lg border border-white/5 italic">
+                        &quot;{lead.notes}&quot;
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#222]">
+                      <button
+                        onClick={() => handleOpenModal(lead)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/20 transition-colors flex items-center gap-1"
+                      >
+                        <Edit2 size={12} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lead.id)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center gap-1"
+                      >
+                        <Trash2 size={12} /> Hapus
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         )}

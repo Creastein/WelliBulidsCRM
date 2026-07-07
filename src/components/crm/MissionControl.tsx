@@ -1,74 +1,42 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle,
   Target,
-  MessageSquare,
-  Reply,
-  Handshake,
-  DollarSign,
   Calendar,
-  Clock,
-  Activity,
-  TrendingUp,
-  AlertCircle,
   Pencil,
   Save,
   X,
-  ArrowRight,
-  Phone,
   RefreshCw,
-  Flame,
+  TrendingUp,
+  DollarSign,
+  Clock,
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CEODailyFocusPanel from './CEODailyFocusPanel';
 import { fetchLeads } from '@/services/leadsService';
-import { fetchKpi } from '@/services/kpiService';
 import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
-  DEFAULT_KPI,
   DEFAULT_LEADS,
   DEFAULT_PROGRESS,
-  type KpiItem,
   type Lead,
   type ProgressData,
 } from '@/data/dataDefaults';
 
-const ICON_MAP: Record<string, React.ElementType> = {
-  MessageSquare,
-  Reply,
-  Handshake,
-  DollarSign,
-};
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string; icon: React.ElementType }> = {
-  'Belum Dihubungi': { label: 'Belum Dihubungi', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/20', icon: AlertCircle },
-  'Follow Up': { label: 'Perlu Follow Up', color: 'text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20', icon: Flame },
-  'Negosiasi': { label: 'Sedang Negosiasi', color: 'text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20', icon: Handshake },
-  'Dihubungi': { label: 'Sudah Dihubungi', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', borderColor: 'border-cyan-500/20', icon: Phone },
-  'Deal': { label: 'Deal / Closing', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20', icon: Handshake },
-};
-
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [kpiData, setKpiData] = useState<KpiItem[]>(DEFAULT_KPI);
   const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
   const [progressData, setProgressData] = useState<ProgressData>(DEFAULT_PROGRESS);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
 
-  // Edit state for KPI
-  const [editingKpi, setEditingKpi] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-
-  // Active tab for Action Items
-  const [activeStatusTab, setActiveStatusTab] = useState<string>('Semua');
-
-  // Edit state for revenue
+  // Edit state for revenue (inline in header)
   const [editingRevenue, setEditingRevenue] = useState(false);
   const [revenueInput, setRevenueInput] = useState('');
 
-  // Edit state for target settings (target, deadline, avg deal value)
+  // Edit state for target settings modal
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [isSavingTarget, setIsSavingTarget] = useState(false);
   const [targetForm, setTargetForm] = useState({
@@ -77,38 +45,8 @@ export default function Dashboard() {
     avgDealValue: '',
   });
 
-  // Computed KPI data based on leads
-  const computedKpiData = useMemo(() => {
-    // Total DM Terkirim = semua prospek di database (setiap lead = 1 DM terkirim)
-    const dmCount = leads.length;
-    // Total Reply = leads yang sudah merespon (Follow Up, Negosiasi, Deal, Ditolak)
-    const replyStatuses = ['Follow Up', 'Negosiasi', 'Deal', 'Ditolak'];
-    const replyCount = leads.filter(l => replyStatuses.includes(l.status)).length;
-    // Closing = leads yang sudah deal
-    const closingCount = leads.filter(l => l.status === 'Deal').length;
-
-    return kpiData.map(kpi => {
-      if (kpi.key === 'dm_sent') return { ...kpi, value: dmCount };
-      if (kpi.key === 'total_reply') return { ...kpi, value: replyCount };
-      if (kpi.key === 'closing') return { ...kpi, value: closingCount };
-      if (kpi.key === 'revenue') return { ...kpi, value: progressData.current, target: progressData.target };
-      return kpi;
-    });
-  }, [kpiData, leads, progressData.current, progressData.target]);
-
-  // Fetch data dari Supabase saat mount
+  // Fetch data from Supabase on mount
   useEffect(() => {
-    fetchKpi().then((rows) => {
-      if (rows.length > 0) {
-        setKpiData((prev) =>
-          prev.map((k) => {
-            const found = rows.find((r: { key: string; value: number; target: number }) => r.key === k.key);
-            return found ? { ...k, value: Number(found.value), target: Number(found.target) } : k;
-          })
-        );
-      }
-    }).catch(() => {/* silent, pakai default */ });
-
     fetchLeads().then(setLeads).catch(() => {/* silent */ });
     fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => {/* silent */ });
   }, []);
@@ -117,35 +55,6 @@ export default function Dashboard() {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
-
-  // Actionable leads grouped by status (only statuses that need action)
-  const actionableLeads = useMemo(() => {
-    const groups: Record<string, Lead[]> = {};
-    const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi', 'Deal'];
-
-    actionStatuses.forEach((status) => {
-      const filtered = leads.filter((l) => l.status === status);
-      if (filtered.length > 0) {
-        groups[status] = filtered
-          .sort((a, b) => {
-            const priorityOrder: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
-            return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
-          })
-          .slice(0, 5); // Show max 5 per group
-      }
-    });
-
-    return groups;
-  }, [leads]);
-
-  // Pipeline summary counts
-  const pipelineSummary = useMemo(() => {
-    const statusCounts: Record<string, number> = {};
-    leads.forEach((l) => {
-      statusCounts[l.status] = (statusCounts[l.status] || 0) + 1;
-    });
-    return statusCounts;
-  }, [leads]);
 
   // Auto-calculate days remaining
   const deadlineDiffDays = useMemo(() => {
@@ -176,6 +85,13 @@ export default function Dashboard() {
     if (remaining <= 0) return 0;
     return Math.ceil(remaining / progressData.avgDealValue);
   }, [progressData]);
+
+  // Pipeline summary counts (for quick stats)
+  const pipelineStats = useMemo(() => {
+    const dealCount = leads.filter(l => l.status === 'Deal').length;
+    const activeCount = leads.filter(l => ['Follow Up', 'Negosiasi', 'Dihubungi'].includes(l.status)).length;
+    return { total: leads.length, deal: dealCount, active: activeCount };
+  }, [leads]);
 
   // Last modified display
   const lastModifiedText = useMemo(() => {
@@ -215,45 +131,6 @@ export default function Dashboard() {
     setShowTargetModal(true);
   };
 
-  // KPI Edit handlers
-  const startEditKpi = (kpi: KpiItem) => {
-    if (kpi.key !== 'revenue') return;
-    setEditingKpi(kpi.key);
-    setEditValue(String(kpi.value));
-  };
-
-  const saveKpi = async () => {
-    if (editingKpi === null) return;
-    const numValue = Number(editValue);
-    if (isNaN(numValue)) return;
-
-    // Single source of truth: revenue value lives in `progress.current` (not in KPI table).
-    if (editingKpi !== 'revenue') {
-      setEditingKpi(null);
-      return;
-    }
-
-    const prevProgressData = progressData;
-    const updatedProgress: ProgressData = { ...progressData, current: numValue };
-    setProgressData(updatedProgress);
-
-    try {
-      await saveProgress(updatedProgress);
-      window.dispatchEvent(new Event('wb:progress-updated'));
-      setLastSaved(new Date().toISOString());
-      toast.success('Revenue diperbarui!');
-      setEditingKpi(null);
-    } catch (err: unknown) {
-      setProgressData(prevProgressData);
-      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan revenue');
-    }
-  };
-
-  const cancelEditKpi = () => {
-    setEditingKpi(null);
-    setEditValue('');
-  };
-
   // Revenue edit handlers
   const saveRevenue = async () => {
     const numValue = Number(revenueInput);
@@ -264,7 +141,6 @@ export default function Dashboard() {
 
     try {
       await saveProgress(updatedProgress);
-      // Dispatch event to sync Sidebar immediately
       window.dispatchEvent(new Event('wb:progress-updated'));
       setLastSaved(new Date().toISOString());
       toast.success('Revenue diperbarui!');
@@ -322,19 +198,18 @@ export default function Dashboard() {
     }
   };
 
-  const priorityBadge = (priority: string) => {
-    const colors: Record<string, string> = {
-      High: 'bg-red-500/10 text-red-400 border-red-500/20',
-      Medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-      Low: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-    };
-    return colors[priority] || colors.Low;
-  };
+  // SVG progress ring calculations
+  const ringRadius = 44;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference - (progressPercent / 100) * ringCircumference;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8">
-      {/* Header */}
-      <header className="relative overflow-hidden rounded-2xl border border-[#3a2a1f]/50 bg-[#1a120b]/50 backdrop-blur-xl px-5 py-6 md:px-7 md:py-8">
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8">
+      {/* ═══════════════════════════════════════════════════════════
+          HERO HEADER — Revenue Progress + Revenue Masuk + Days
+         ═══════════════════════════════════════════════════════════ */}
+      <header className="relative overflow-hidden rounded-2xl border border-[#3a2a1f]/50 bg-[#1a120b]/50 backdrop-blur-xl">
+        {/* Background animated orbs */}
         <div className="pointer-events-none absolute inset-0">
           <motion.div
             className="absolute -top-32 -left-20 h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle,rgba(244,207,144,0.45),rgba(244,207,144,0.0)_65%)] blur-[90px]"
@@ -346,57 +221,106 @@ export default function Dashboard() {
             animate={{ x: [0, -30, 20, 0], y: [0, -10, 15, 0], scale: [1, 1.05, 1, 1] }}
             transition={{ duration: 56, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <motion.div
-            className="absolute top-10 right-10 h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,rgba(176,120,90,0.28),rgba(176,120,90,0.0)_65%)] blur-[80px] hidden md:block"
-            animate={{ x: [0, -20, 10, 0], y: [0, 15, -10, 0], scale: [1, 1.06, 1, 1] }}
-            transition={{ duration: 52, repeat: Infinity, ease: 'easeInOut' }}
-          />
           <div className="absolute inset-0 bg-[#1a120b]/60"></div>
         </div>
 
-        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 text-[#f5d9b5] bg-[#3a2416]/60 border border-[#5a3a24] px-3 py-1 rounded-full text-xs font-semibold tracking-wide">
-              <Target size={14} />
-              Mission Control
+        <div className="relative px-5 py-6 md:px-7 md:py-8">
+          {/* Title row */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 text-[#f5d9b5] bg-[#3a2416]/60 border border-[#5a3a24] px-3 py-1 rounded-full text-xs font-semibold tracking-wide">
+                <Target size={14} />
+                Mission Control
+              </div>
+              <h1 className="text-2xl md:text-3xl font-display tracking-tight text-[#fff4e6] mt-2">Mission Control</h1>
+              <p className="text-[#e4c9a6] mt-1 text-xs flex items-center gap-2">
+                <RefreshCw size={12} className="text-[#c99a6b]" />
+                Last Update: {lastModifiedText}
+              </p>
             </div>
-            <h1 className="text-3xl md:text-4xl font-display tracking-tight text-[#fff4e6] mt-3">Mission Control</h1>
-            <p className="text-[#e4c9a6] mt-2 text-sm flex items-center gap-2">
-              <RefreshCw size={14} className="text-[#c99a6b]" />
-              Last Update: {lastModifiedText}
-            </p>
+            <button
+              type="button"
+              onClick={openTargetModal}
+              title="Edit target"
+              className="p-2 rounded-xl text-[#caa984] hover:text-[#fff4e6] hover:bg-white/5 border border-[#3a2a1f] transition-colors"
+            >
+              <Pencil size={16} />
+            </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto bg-[#1c120b]/80 p-4 rounded-xl border border-[#3a2a1f]">
-            <div className="flex items-start gap-3">
-              <div>
-                <p className="text-xs text-[#caa984] uppercase tracking-wider font-semibold mb-1">Target Revenue</p>
-                <p className="text-xl font-mono text-[#fff4e6]">{formatCurrency(progressData.target)}</p>
-                {isTargetAchieved && (
-                  <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
-                    <CheckCircle size={12} />
-                    Target tercapai
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={openTargetModal}
-                title="Edit target"
-                className="mt-0.5 p-1.5 rounded-lg text-[#caa984] hover:text-[#fff4e6] hover:bg-white/5 transition-colors"
-              >
-                <Pencil size={14} />
-              </button>
-            </div>
-            <div className="w-px h-10 bg-[#3a2a1f]"></div>
-            <div>
-              <p className="text-xs text-[#caa984] uppercase tracking-wider font-semibold mb-1">Days Remaining</p>
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-[#f0b26b]" />
-                <p className="text-xl font-mono text-[#fff4e6]">
-                  {daysRemaining} <span className="text-sm text-[#caa984]">days</span>
+          {/* Main metrics grid */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_auto] gap-4 md:gap-0 items-center">
+            {/* Revenue Masuk */}
+            <div className="bg-[#1c120b]/80 md:bg-transparent rounded-xl md:rounded-none p-4 md:p-0">
+              <p className="text-[10px] text-[#caa984] uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                <DollarSign size={12} className="text-emerald-400" />
+                Revenue Masuk
+              </p>
+              {editingRevenue ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={revenueInput}
+                    onChange={(e) => setRevenueInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveRevenue();
+                      if (e.key === 'Escape') setEditingRevenue(false);
+                    }}
+                    autoFocus
+                    className="w-36 bg-[#0a0a0a] border border-orange-500 rounded-lg px-3 py-1.5 text-lg font-mono font-bold text-white focus:outline-none"
+                  />
+                  <button onClick={saveRevenue} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg">
+                    <Save size={16} />
+                  </button>
+                  <button onClick={() => setEditingRevenue(false)} className="p-1.5 text-gray-500 hover:bg-white/5 rounded-lg">
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <p
+                  className="text-xl md:text-2xl font-mono font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors"
+                  onClick={() => {
+                    setRevenueInput(String(progressData.current));
+                    setEditingRevenue(true);
+                  }}
+                >
+                  {formatCurrency(progressData.current)}
                 </p>
-              </div>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-12 bg-[#3a2a1f] mx-5"></div>
+
+            {/* Target Revenue */}
+            <div className="bg-[#1c120b]/80 md:bg-transparent rounded-xl md:rounded-none p-4 md:p-0">
+              <p className="text-[10px] text-[#caa984] uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                <Target size={12} className="text-[#f0b26b]" />
+                Target Revenue
+              </p>
+              <p className="text-xl md:text-2xl font-mono font-bold text-[#fff4e6]">
+                {formatCurrency(progressData.target)}
+              </p>
+              {isTargetAchieved && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
+                  <CheckCircle size={10} />
+                  Target tercapai
+                </div>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-12 bg-[#3a2a1f] mx-5"></div>
+
+            {/* Days Remaining */}
+            <div className="bg-[#1c120b]/80 md:bg-transparent rounded-xl md:rounded-none p-4 md:p-0">
+              <p className="text-[10px] text-[#caa984] uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                <Calendar size={12} className="text-[#f0b26b]" />
+                Days Remaining
+              </p>
+              <p className="text-xl md:text-2xl font-mono font-bold text-[#fff4e6]">
+                {daysRemaining} <span className="text-sm text-[#caa984]">days</span>
+              </p>
               {isTargetAchieved && (
                 <p className="mt-1 text-[10px] font-mono uppercase tracking-wider text-emerald-300">
                   {deadlineDiffDays > 0
@@ -407,337 +331,79 @@ export default function Dashboard() {
                 </p>
               )}
             </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-12 bg-[#3a2a1f] mx-5"></div>
+
+            {/* Progress Ring */}
+            <div className="flex items-center justify-center bg-[#1c120b]/80 md:bg-transparent rounded-xl md:rounded-none p-4 md:p-0">
+              <div className="relative w-24 h-24 md:w-[100px] md:h-[100px]">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50" cy="50" r={ringRadius}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="50" cy="50" r={ringRadius}
+                    fill="none"
+                    stroke={isTargetAchieved ? '#10b981' : 'url(#headerProgressGrad)'}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringOffset}
+                    className="transition-all duration-1000"
+                  />
+                  <defs>
+                    <linearGradient id="headerProgressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#fbbf24" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-2xl font-mono font-bold text-white">{progressPercent}%</p>
+                    <p className="text-[8px] text-[#caa984] uppercase tracking-wider font-semibold">
+                      {isTargetAchieved ? 'Done' : 'Progress'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom detail bar */}
+          <div className="mt-5 pt-4 border-t border-[#3a2a1f]/60 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono text-[#caa984]">
+            <span className="flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-orange-400" />
+              {isTargetAchieved ? 'Surplus' : 'Sisa'}: <span className={`font-semibold ${isTargetAchieved ? 'text-emerald-400' : 'text-orange-400'}`}>
+                {formatCurrency(isTargetAchieved ? surplus : Math.max(0, progressData.target - progressData.current))}
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users size={12} className="text-blue-400" />
+              Klien dibutuhkan: <span className="font-semibold text-white">{clientsNeeded}</span>
+              <span className="text-[#8a7a6a]">(@ {formatCurrency(progressData.avgDealValue)})</span>
+              {isTargetAchieved && <span className="text-emerald-400 font-semibold">DONE</span>}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock size={12} className="text-purple-400" />
+              Pipeline: <span className="text-white font-semibold">{pipelineStats.active}</span> aktif · <span className="text-emerald-400 font-semibold">{pipelineStats.deal}</span> deal
+            </span>
           </div>
         </div>
       </header>
 
-      {/* KPI Metrics */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Activity size={18} className="text-gray-400" />
-          <h2 className="text-lg font-heading text-gray-200">KPI Metrics</h2>
-          <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5 ml-2">
-            Klik angka revenue untuk edit
-          </span>
-        </div>
+      {/* ═══════════════════════════════════════════════════════════
+          CEO DAILY FOCUS (Compact)
+         ═══════════════════════════════════════════════════════════ */}
+      <CEODailyFocusPanel />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {computedKpiData.map((kpi) => {
-            const IconComponent = ICON_MAP[kpi.iconName] || Target;
-            const progress = kpi.target > 0 ? Math.min(100, (kpi.value / kpi.target) * 100) : 0;
-            const isEditing = editingKpi === kpi.key;
-
-            return (
-              <div
-                key={kpi.key}
-                className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-5 relative overflow-hidden group hover:border-white/10 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`p-3 rounded-lg ${kpi.bg}`}>
-                    <IconComponent size={24} className={kpi.color} />
-                  </div>
-                  {!isEditing && kpi.key === 'revenue' && (
-                    <button
-                      onClick={() => startEditKpi(kpi)}
-                      className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      title="Edit value"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-400 font-medium mb-1">{kpi.title}</p>
-                  {isEditing ? (
-                    <div className="flex items-center gap-2 mb-2">
-                      <input
-                        type="number"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveKpi();
-                          if (e.key === 'Escape') cancelEditKpi();
-                        }}
-                        autoFocus
-                        className="w-full bg-[#0a0a0a] border border-orange-500 rounded-lg px-3 py-1.5 text-2xl font-mono font-bold text-white focus:outline-none"
-                      />
-                      <button onClick={saveKpi} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg">
-                        <Save size={16} />
-                      </button>
-                      <button onClick={cancelEditKpi} className="p-1.5 text-gray-500 hover:bg-white/5 rounded-lg">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <p
-                      className={`text-3xl font-mono font-bold text-white mb-2 transition-colors ${kpi.key === 'revenue' ? 'cursor-pointer hover:text-orange-400' : ''}`}
-                      onClick={() => startEditKpi(kpi)}
-                    >
-                      {kpi.key === 'revenue' ? formatCurrency(kpi.value) : kpi.value}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-gray-500">
-                      {kpi.key === 'revenue' ? `Target: ${formatCurrency(kpi.target)}` : kpi.targetLabel}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
-                  <div
-                    className={`h-full transition-all duration-700 ${kpi.color.replace('text-', 'bg-')}`}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Actionable Leads — integrated from Database Prospek */}
-        <section className="lg:col-span-2 space-y-6">
-          <div className="flex items-center gap-2">
-            <Flame size={18} className="text-orange-400" />
-            <h2 className="text-lg font-heading text-gray-200">Action Items</h2>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 ml-2">
-              Live dari Database Prospek
-            </span>
-          </div>
-
-          {/* Summary pills as tabs */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveStatusTab('Semua')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium transition-colors ${
-                activeStatusTab === 'Semua' 
-                  ? 'bg-white/10 text-white border-white/20' 
-                  : 'bg-transparent text-gray-500 border-white/5 hover:bg-white/5'
-              }`}
-            >
-              Semua
-            </button>
-            {Object.entries(pipelineSummary).map(([status, count]) => {
-              const config = STATUS_CONFIG[status];
-              if (!config) return null;
-              
-              // Only render tabs for actionable statuses 
-              const actionStatuses = ['Follow Up', 'Negosiasi', 'Belum Dihubungi', 'Dihubungi', 'Deal'];
-              if (!actionStatuses.includes(status)) return null;
-
-              const isActive = activeStatusTab === status;
-
-              return (
-                <button 
-                  key={status} 
-                  onClick={() => setActiveStatusTab(status)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium transition-colors ${
-                    isActive 
-                      ? `${config.bgColor} ${config.color} ${config.borderColor} ring-1 ring-${config.color.replace('text-', '')}/50` 
-                      : `bg-transparent ${config.color} border-${config.color.replace('text-', '')}/20 opacity-70 hover:opacity-100 hover:${config.bgColor}`
-                  }`}
-                >
-                  <config.icon size={12} />
-                  {status}: {count}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Actionable lead cards by status */}
-          {Object.entries(actionableLeads).map(([status, statusLeads]) => {
-            if (activeStatusTab !== 'Semua' && activeStatusTab !== status) return null;
-            
-            const config = STATUS_CONFIG[status];
-            if (!config) return null;
-
-            return (
-              <div key={status}>
-                <div className="flex items-center gap-2 mb-3">
-                  <config.icon size={16} className={config.color} />
-                  <h3 className={`text-sm font-semibold ${config.color}`}>{config.label}</h3>
-                  <span className="text-xs font-mono text-gray-500">({statusLeads.length})</span>
-                </div>
-
-                <div className="space-y-2">
-                  {statusLeads.map((lead) => (
-                    <motion.div
-                      key={lead.id}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`bg-[#111]/50 backdrop-blur-xl border ${config.borderColor} rounded-xl p-4 hover:bg-white/5 transition-colors group`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-white text-sm truncate">{lead.name}</p>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${priorityBadge(lead.priority)}`}>
-                              {lead.priority}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                            <span>{lead.niche}</span>
-                            <span>•</span>
-                            <span>{lead.location}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end mt-2 sm:mt-0">
-                          <div className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bgColor} ${config.color} flex items-center gap-1.5`}>
-                            <ArrowRight size={12} />
-                            {lead.action}
-                          </div>
-                        </div>
-                      </div>
-
-                      {lead.notes && (
-                        <p className="text-xs text-gray-500 mt-2 line-clamp-1 italic">&quot;{lead.notes}&quot;</p>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          {Object.keys(actionableLeads).length === 0 && (
-            <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-8 text-center">
-              <p className="text-gray-500 text-sm">Belum ada lead yang perlu action. Tambahkan di Database Prospek!</p>
-            </div>
-          )}
-        </section>
-
-        {/* Progress Menuju Target */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={18} className="text-gray-400" />
-            <h2 className="text-lg font-heading text-gray-200">Progress Menuju {formatCurrency(progressData.target)}</h2>
-          </div>
-
-          <div className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-6 h-[calc(100%-2rem)]">
-            {isTargetAchieved && (
-              <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-start justify-between gap-4">
-                <div className="flex gap-3">
-                  <div className="mt-0.5 text-emerald-400">
-                    <CheckCircle size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-300">Target tercapai</p>
-                    <p className="text-xs text-emerald-200/80 mt-0.5 font-mono">
-                      {surplus > 0 ? `Surplus ${formatCurrency(surplus)}.` : 'Tepat di target.'}{' '}
-                      {deadlineDiffDays > 0
-                        ? `${deadlineDiffDays} hari lebih cepat.`
-                        : deadlineDiffDays === 0
-                          ? 'Tepat waktu.'
-                          : `${Math.abs(deadlineDiffDays)} hari setelah deadline.`}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={openTargetModal}
-                  className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
-                >
-                  Set target baru
-                </button>
-              </div>
-            )}
-
-            {/* Donut Chart */}
-            <div className="flex flex-col items-center justify-center mb-8 relative">
-              <svg className="w-48 h-48" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  stroke={isTargetAchieved ? '#10b981' : '#f97316'}
-                  strokeWidth="12"
-                  strokeLinecap="round"
-                  strokeDasharray={`${progressPercent * 3.14} ${314 - progressPercent * 3.14}`}
-                  strokeDashoffset="78.5"
-                  className="transition-all duration-1000"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-4xl font-mono font-bold text-white mb-1">{progressPercent}%</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-                    {isTargetAchieved ? 'Target Tercapai' : 'Tercapai'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                <span className="text-sm text-gray-400">Target Total</span>
-                <span className="font-mono text-white font-medium">{formatCurrency(progressData.target)}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                <span className="text-sm text-gray-400">Revenue Masuk</span>
-                <div className="flex items-center gap-2">
-                  {editingRevenue ? (
-                    <>
-                      <input
-                        type="number"
-                        value={revenueInput}
-                        onChange={(e) => setRevenueInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveRevenue();
-                          if (e.key === 'Escape') setEditingRevenue(false);
-                        }}
-                        autoFocus
-                        className="w-32 bg-[#0a0a0a] border border-orange-500 rounded px-2 py-1 text-sm font-mono text-white focus:outline-none"
-                      />
-                      <button onClick={saveRevenue} className="p-1 text-emerald-400">
-                        <Save size={14} />
-                      </button>
-                      <button onClick={() => setEditingRevenue(false)} className="p-1 text-gray-500">
-                        <X size={14} />
-                      </button>
-                    </>
-                  ) : (
-                    <span
-                      className="font-mono text-emerald-400 font-medium cursor-pointer hover:text-emerald-300 transition-colors"
-                      onClick={() => {
-                        setRevenueInput(String(progressData.current));
-                        setEditingRevenue(true);
-                      }}
-                    >
-                      {formatCurrency(progressData.current)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                <span className="text-sm text-gray-400">{isTargetAchieved ? 'Surplus' : 'Sisa Target'}</span>
-                <span className={`font-mono font-medium ${isTargetAchieved ? 'text-emerald-400' : 'text-orange-400'}`}>
-                  {formatCurrency(
-                    isTargetAchieved
-                      ? Math.max(0, progressData.current - progressData.target)
-                      : Math.max(0, progressData.target - progressData.current)
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-white/5">
-                <span className="text-sm text-gray-400">Klien Dibutuhkan</span>
-                <span className="font-mono text-white font-medium">
-                  {clientsNeeded}{' '}
-                  <span className="text-xs text-gray-500">(@ {formatCurrency(progressData.avgDealValue)})</span>
-                  {isTargetAchieved && <span className="ml-2 text-xs font-semibold text-emerald-400">DONE</span>}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Target Settings Modal */}
+      {/* ═══════════════════════════════════════════════════════════
+          TARGET SETTINGS MODAL
+         ═══════════════════════════════════════════════════════════ */}
       {showTargetModal && (
         <motion.div
           initial={{ opacity: 0 }}

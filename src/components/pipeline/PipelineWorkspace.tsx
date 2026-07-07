@@ -31,7 +31,7 @@ export default function PipelineWorkspace() {
   };
 
   return (
-    <div className="pipeline-workspace workspace-layout h-full">
+    <div className="pipeline-workspace workspace-layout h-full relative">
       <div className="main-content p-4 md:p-8 overflow-y-auto">
         <WorkspaceHeader />
 

@@ -229,7 +229,7 @@ export default function Finance() {
 
   return (
     <motion.div
-      className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8"
+      className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8"
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -279,7 +279,7 @@ export default function Finance() {
             className="bg-[#111]/50 backdrop-blur-xl border border-white/5 rounded-xl p-5 hover:border-white/10 transition-colors"
           >
             <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">{card.label}</p>
-            <p className={`text-2xl font-mono font-bold ${card.color}`}>{card.value}</p>
+            <p className={`text-lg sm:text-2xl font-mono font-bold ${card.color}`}>{card.value}</p>
             <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
           </motion.div>
         ))}

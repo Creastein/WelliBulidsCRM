@@ -15,6 +15,7 @@ const MODE_INSTRUCTIONS: Record<string, string> = {
   "Tool Prompt": "Buat prompt siap pakai untuk Claude, Codex, Antigravity, Stitch, AI Studio, atau TestSprite.",
   "Review Website": "Review website atau landing page berdasarkan URL/brief user. Fokus pada clarity offer, CTA, trust, conversion, mobile UX, SEO basic, dan improvement tasks.",
   "Lead to PRD": "Ubah data lead dari Lead Finder AI, Google Maps, atau deskripsi bisnis menjadi rekomendasi paket WelliBuilds, PRD awal, dan suggested next action.",
+  "CEO / Adrian": "Ubah brain dump user menjadi prioritas harian harian (maksimal 3 fokus utama: Revenue, Build, Admin), tandai item yang butuh ACC (seperti publish, deploy, delete, dll), buat parking lot untuk tugas sisa, dan berikan rekomendasi next action.",
 };
 
 export async function POST(req: NextRequest) {
@@ -66,6 +67,21 @@ ${message}`;
         logs: stderr ? [stderr] : [],
       });
     } catch (execError) {
+      if (mode === "CEO / Adrian") {
+        try {
+          const { generateDailyFocusFromBrainDump, formatDailyFocusText } = await import("@/lib/dailyFocusHelper");
+          const result = generateDailyFocusFromBrainDump(message);
+          const formatted = formatDailyFocusText(result);
+          return NextResponse.json({
+            success: true,
+            output: formatted,
+            logs: ["Hermes execution failed, fell back to local rule-based parser."],
+          });
+        } catch (fallbackErr) {
+          console.error("Local fallback Daily Focus parser failed:", fallbackErr);
+        }
+      }
+
       const err = execError as Error;
       console.error("Failed to execute Hermes CLI:", err);
       return NextResponse.json(
