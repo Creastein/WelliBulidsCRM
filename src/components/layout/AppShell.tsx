@@ -13,6 +13,7 @@ const DatabaseProspek = lazy(() => import('../crm/DatabaseProspek'));
 const Finance = lazy(() => import('../crm/Finance'));
 const Pricing = lazy(() => import('../crm/Pricing'));
 const PipelineWorkspace = lazy(() => import('../pipeline/PipelineWorkspace'));
+const LeadFlow = lazy(() => import('../crm/LeadFlow'));
 
 // Three.js / shadergradient components must be disabled for SSR as they access browser APIs like canvas and window
 const GradientBackground = dynamic(() => import('../crm/GradientBackground'), { ssr: false });
@@ -37,9 +38,16 @@ export default function AppShell() {
     'Ctrl+3': () => setActiveTab('finance'),
     'Ctrl+4': () => setActiveTab('pricing'),
     'Ctrl+5': () => setActiveTab('pipeline'),
+    'Ctrl+6': () => setActiveTab('lead-flow'),
     'Ctrl+N': () => {
-      if (activeTab !== 'crm') setActiveTab('crm');
-      setTimeout(() => window.dispatchEvent(new Event('wb:new-lead')), 50);
+      if (activeTab !== 'crm' && activeTab !== 'lead-flow') setActiveTab('crm');
+      setTimeout(() => {
+        if (activeTab === 'lead-flow') {
+          window.dispatchEvent(new Event('wb:new-lead-flow'));
+        } else {
+          window.dispatchEvent(new Event('wb:new-lead'));
+        }
+      }, 50);
     },
     'Escape': () => {
       window.dispatchEvent(new Event('wb:escape'));
@@ -86,6 +94,7 @@ export default function AppShell() {
             {activeTab === 'finance' && <Finance />}
             {activeTab === 'pricing' && <Pricing />}
             {activeTab === 'pipeline' && <PipelineWorkspace />}
+            {activeTab === 'lead-flow' && <LeadFlow />}
           </Suspense>
           <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>
