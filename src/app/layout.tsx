@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Plus_Jakarta_Sans, Syne } from "next/font/google";
+import { Inter, JetBrains_Mono, Bungee_Spice, Medula_One } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,16 +14,16 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "700"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-display",
+const bungee = Bungee_Spice({
+  variable: "--font-bungee",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: "400",
 });
 
-const syne = Syne({
-  variable: "--font-syne",
+const medula = Medula_One({
+  variable: "--font-medula",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: "400",
 });
 
 export const viewport: Viewport = {
@@ -55,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable} ${jakarta.variable} ${syne.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jetbrains.variable} ${bungee.variable} ${medula.variable}`}>
       <body className="antialiased">
         {children}
       </body>
