@@ -26,7 +26,7 @@ const MODES: Mode[] = [
 ];
 
 const MODE_PLACEHOLDERS: Record<Mode, string> = {
-  "Ask Workflow":    "Tanyakan sesuatu tentang workflow build WelliBuilds...",
+  "Ask Workflow":    "Tanyakan sesuatu tentang workflow build WL-STUDIO...",
   "Generate PRD":    "Paste Google Maps listing, brief klien, atau deskripsi bisnis...",
   "Breakdown Tasks": "Tuliskan fitur atau modul yang ingin dipecah menjadi task...",
   "QA Test Cases":   "Tuliskan fitur atau flow yang ingin dibuatkan test cases-nya...",

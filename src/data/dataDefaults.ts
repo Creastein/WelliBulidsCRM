@@ -1,5 +1,5 @@
 /**
- * Centralized default data for the WelliBuilds dashboard.
+ * Centralized default data for the WL-STUDIO dashboard.
  * These values are used as initial/fallback data when localStorage is empty.
  * All components import from here instead of hardcoding data.
  */

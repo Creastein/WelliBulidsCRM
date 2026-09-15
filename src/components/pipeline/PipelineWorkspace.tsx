@@ -48,7 +48,7 @@ export default function PipelineWorkspace() {
         />
 
         <div className="pipeline-foot mt-12 text-center text-xs font-mono opacity-50 uppercase tracking-widest pb-8">
-          wellibuilds.com · full-stack dev pipeline · 2025
+          wl-studio.online · full-stack dev pipeline · 2026
         </div>
       </div>
 

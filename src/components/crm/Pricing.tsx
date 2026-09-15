@@ -573,7 +573,7 @@ export default function Pricing() {
       ? `\n🛠️ *PAKET MAINTENANCE:* ${activeMaint.name} (${activeMaint.priceDisplay}${activeMaint.period})\n${activeMaint.features.slice(0, 3).map((f) => `  • ${f}`).join('\n')}`
       : '';
 
-    return `*PROPOSAL & REKOMENDASI PAKET WEBSITE WELLIBUILDS*
+    return `*PROPOSAL & REKOMENDASI PAKET WEBSITE WL-STUDIO*
 --------------------------------------------------
 ${nameGreeting}, berikut estimasi investasi pembuatan website profesional untuk *${clientBusinessType}*:
 
@@ -592,7 +592,7 @@ ${maintText}
 • *TOTAL INVESTASI PROYEK:* *${formatCurrency(totalProjectPrice)}*
 • *Skema DP (50%):* *${formatCurrency(downPayment)}* (Pelunasan 50% setelah website live)
 
-✨ *KEUNGGULAN WELLIBUILDS:*
+✨ *KEUNGGULAN WL-STUDIO:*
 ✓ Modern Next.js Engine (Loading super cepat di HP)
 ✓ Tampilan estetik, elegan, & siap konversi
 ✓ Bebas pusing teknis, dibantu setup hingga live
@@ -629,7 +629,7 @@ Ada waktu luang untuk kita diskusikan detail fiturnya? Terima kasih! 🙏`;
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `WelliBuilds_Pricing_Matrix_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `WL_STUDIO_Pricing_Matrix_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

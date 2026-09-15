@@ -82,9 +82,9 @@ export default function QuickActions({ onOpenAgent, onSelectMode }: QuickActions
       },
     },
     {
-      id: "qa-wellibuilds-website",
-      title: "WelliBuilds Website",
-      desc: "Buka website publik WelliBuilds — portfolio dan landing page klien.",
+      id: "qa-wl-studio-website",
+      title: "WL-STUDIO Website",
+      desc: "Buka website publik WL-STUDIO — portfolio dan landing page klien.",
       badge: "Web",
       accent: "#10B981",
       accentBg: "rgba(16,185,129,0.08)",

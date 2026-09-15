@@ -20,7 +20,7 @@ export default function OutputCenter({ latestOutput, onClear }: OutputCenterProp
   const handleDownload = () => {
     if (!latestOutput) return;
     const timestamp = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "");
-    const filename = `wellibuilds-output-${timestamp}.md`;
+    const filename = `wl-studio-output-${timestamp}.md`;
     const blob = new Blob([latestOutput], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

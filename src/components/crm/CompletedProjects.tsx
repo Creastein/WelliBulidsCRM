@@ -131,7 +131,7 @@ export default function CompletedProjects() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `WelliBuilds_Projects_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `WL_STUDIO_Projects_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -151,7 +151,7 @@ export default function CompletedProjects() {
       category: 'Villa',
       price: 2000000,
       invoiceDate: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-      invoiceNumber: `WLB/INV/${new Date().getFullYear()}/${nextRowCode}`,
+      invoiceNumber: `WLS/INV/${new Date().getFullYear()}/${nextRowCode}`,
       packageType: 'Paket Standar',
       description: '',
       featuresText: '1 Halaman Responsif\nDirect WhatsApp Booking\nDomain & Fast Hosting\nSEO Google Maps',

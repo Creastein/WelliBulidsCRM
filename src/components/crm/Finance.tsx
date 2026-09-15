@@ -128,7 +128,7 @@ export default function Finance() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `wellibuilds_weekly_review_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `wl_studio_weekly_review_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

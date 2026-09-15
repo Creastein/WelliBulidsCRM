@@ -92,7 +92,7 @@ export default function CinematicLoader({ onComplete }: CinematicLoaderProps) {
                                 animate={{ y: 0, opacity: 1, letterSpacing: "0.2em" }}
                                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
                             >
-                                WELLIBUILDS
+                                WL-STUDIO
                             </motion.h1>
                         </div>
 

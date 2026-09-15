@@ -97,7 +97,7 @@ export default function BuildPipeline() {
 
       {/* Section header */}
       <div className="pipeline-header">
-        <span className="pipeline-eyebrow">WelliBuilds · Dev Workflow</span>
+        <span className="pipeline-eyebrow">WL-STUDIO · Dev Workflow</span>
         <h2 className="pipeline-h2">
           Build <span className="g">Pipeline</span>
         </h2>

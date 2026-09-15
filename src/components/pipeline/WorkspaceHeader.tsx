@@ -12,7 +12,7 @@ export default function WorkspaceHeader() {
           color: "rgba(255,255,255,0.25)",
           textTransform: "uppercase",
         }}>
-          WelliBuilds · Dev Command Center
+          WL-STUDIO · Dev Command Center
         </span>
         {/* Live indicator */}
         <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
@@ -36,7 +36,7 @@ export default function WorkspaceHeader() {
 
       {/* Main title */}
       <h2 style={{ marginBottom: "10px", fontSize: "36px", fontWeight: "700", fontFamily: "var(--font-syne), sans-serif", letterSpacing: "-0.035em" }}>
-        WelliBuilds <span className="g" style={{ background: "linear-gradient(120deg, #7C3AED 0%, #3B82F6 48%, #06B6D4 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Workspace</span>
+        WL-STUDIO <span className="g" style={{ background: "linear-gradient(120deg, #7C3AED 0%, #3B82F6 48%, #06B6D4 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Workspace</span>
       </h2>
 
       {/* Subtitle */}

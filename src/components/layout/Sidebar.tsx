@@ -93,7 +93,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           <div className="relative shrink-0">
             <Image
               src="/logo.png"
-              alt="WelliBuilds"
+              alt="WL-STUDIO"
               width={56}
               height={56}
               className={`rounded-xl object-contain transition-all duration-300 ${isOpen ? 'w-14 h-14' : 'w-11 h-11'}`}
@@ -109,7 +109,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.15 }}
               >
-                <h1 className="font-display text-white tracking-tight leading-tight text-[15px]">WelliBuilds</h1>
+                <h1 className="font-display text-white tracking-tight leading-tight text-[15px]">WL-STUDIO</h1>
                 <p className="text-[9px] font-mono text-orange-400/80 uppercase tracking-[0.2em]">Freelance Dashboard</p>
               </motion.div>
             )}

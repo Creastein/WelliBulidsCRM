@@ -119,7 +119,7 @@ export default function InstallPwaButton({ isOpen }: InstallPwaButtonProps) {
                 <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-4">
                   <MonitorSmartphone size={32} className="text-orange-400" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Install WelliBuilds CRM</h3>
+                <h3 className="text-lg font-bold text-white mb-2">Install WL-STUDIO CRM</h3>
                 <p className="text-sm text-gray-400 mb-6 leading-relaxed">
                   Install this application on your home screen for quick and easy access when you&apos;re on the go.
                 </p>

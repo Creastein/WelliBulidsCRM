@@ -36,13 +36,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "WelliBuilds CRM",
-  description: "WelliBuilds CRM Dashboard for Lead Management",
+  title: "WL-STUDIO CRM",
+  description: "WL-STUDIO CRM Dashboard for Lead Management",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WelliBuilds",
+    title: "WL-STUDIO",
   },
   formatDetection: {
     telephone: false,
