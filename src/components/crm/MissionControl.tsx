@@ -126,10 +126,11 @@ export default function Dashboard() {
 
   // Pipeline summary counts (for quick stats)
   const pipelineStats = useMemo(() => {
-    const dealCount = leads.filter(l => l.status === 'Deal').length;
+    const leadsDealCount = leads.filter(l => l.status === 'Deal').length;
+    const dealCount = projects.length > 0 ? projects.length : leadsDealCount;
     const activeCount = leads.filter(l => ['Follow Up', 'Negosiasi', 'Dihubungi'].includes(l.status)).length;
     return { total: leads.length, deal: dealCount, active: activeCount };
-  }, [leads]);
+  }, [leads, projects]);
 
   // Last modified display
   const lastModifiedText = useMemo(() => {

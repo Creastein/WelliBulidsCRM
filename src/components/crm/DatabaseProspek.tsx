@@ -75,6 +75,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { fetchLeads, createLead, updateLead, deleteLead } from '@/services/leadsService';
+import { fetchProjects, type CompletedProject } from '@/services/projectsService';
 import { DEFAULT_NICHES, type Lead } from '@/data/dataDefaults';
 
 const containerVariants = {
@@ -159,15 +160,25 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DatabaseProspek() {
   const [leads, setLeads] = React.useState<Lead[]>([]);
+  const [projects, setProjects] = React.useState<CompletedProject[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // Load leads dari Supabase saat pertama kali mount
+  // Load leads dan projects dari Supabase saat pertama kali mount
   React.useEffect(() => {
     setIsLoading(true);
     fetchLeads()
       .then(setLeads)
       .catch((err) => toast.error(err.message))
       .finally(() => setIsLoading(false));
+
+    fetchProjects().then(setProjects).catch(() => {});
+
+    const handleProjectsUpdated = () => {
+      fetchProjects().then(setProjects).catch(() => {});
+    };
+
+    window.addEventListener('wb:projects-updated', handleProjectsUpdated);
+    return () => window.removeEventListener('wb:projects-updated', handleProjectsUpdated);
   }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('ringkasan');
@@ -355,14 +366,15 @@ export default function DatabaseProspek() {
     return counts;
   }, [leads]);
 
-  // KPI metrics computed from leads data
+  // KPI metrics computed from leads and projects data
   const kpiMetrics = useMemo(() => {
     const dmCount = leads.length;
     const replyStatuses = ['Follow Up', 'Negosiasi', 'Deal', 'Ditolak'];
     const replyCount = leads.filter(l => replyStatuses.includes(l.status)).length;
-    const closingCount = leads.filter(l => l.status === 'Deal').length;
+    const leadsDealCount = leads.filter(l => l.status === 'Deal').length;
+    const closingCount = projects.length > 0 ? projects.length : leadsDealCount;
     return { dmCount, replyCount, closingCount };
-  }, [leads]);
+  }, [leads, projects]);
 
   const handleOpenModal = useCallback((lead?: Lead) => {
     if (lead) {

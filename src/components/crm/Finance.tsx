@@ -155,8 +155,11 @@ export default function Finance() {
     };
   });
 
-  // Deal count from CRM
-  const dealCount = useMemo(() => leads.filter((l) => l.status === 'Deal').length, [leads]);
+  // Deal count from CRM & Done Projects
+  const dealCount = useMemo(() => {
+    const leadsDeal = leads.filter((l) => l.status === 'Deal').length;
+    return projects.length > 0 ? projects.length : leadsDeal;
+  }, [leads, projects]);
 
   // Progress percentage
   const progressPercent = progressData.target > 0
