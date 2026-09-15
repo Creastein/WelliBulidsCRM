@@ -22,7 +22,11 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CEODailyFocusPanel from './CEODailyFocusPanel';
-import { COMPLETED_PROJECTS } from './CompletedProjects';
+import {
+  fetchProjects,
+  type CompletedProject,
+  INITIAL_COMPLETED_PROJECTS
+} from '@/services/projectsService';
 import { fetchLeads } from '@/services/leadsService';
 import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
@@ -35,6 +39,7 @@ import {
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
+  const [projects, setProjects] = useState<CompletedProject[]>(INITIAL_COMPLETED_PROJECTS);
   const [progressData, setProgressData] = useState<ProgressData>(DEFAULT_PROGRESS);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
 
@@ -51,10 +56,18 @@ export default function Dashboard() {
     avgDealValue: '',
   });
 
-  // Fetch data from Supabase on mount
+  // Fetch data from Supabase & services on mount
   useEffect(() => {
     fetchLeads().then(setLeads).catch(() => {/* silent */ });
+    fetchProjects().then(setProjects).catch(() => {/* silent */ });
     fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => {/* silent */ });
+
+    const handleProjectsUpdated = () => {
+      fetchProjects().then(setProjects).catch(() => {/* silent */ });
+    };
+
+    window.addEventListener('wb:projects-updated', handleProjectsUpdated);
+    return () => window.removeEventListener('wb:projects-updated', handleProjectsUpdated);
   }, []);
 
   useEffect(() => {
@@ -89,6 +102,10 @@ export default function Dashboard() {
     const activeCount = leads.filter(l => ['Follow Up', 'Negosiasi', 'Dihubungi'].includes(l.status)).length;
     return { total: leads.length, deal: dealCount, active: activeCount };
   }, [leads]);
+
+  const totalProjectsRevenue = useMemo(() => {
+    return projects.reduce((acc, p) => acc + p.price, 0);
+  }, [projects]);
 
   // Last modified display
   const lastModifiedText = useMemo(() => {
@@ -412,11 +429,11 @@ export default function Dashboard() {
                 <h3 className="text-sm font-bold text-white tracking-tight">Done Projects & Live Portfolio</h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
                   <ShieldCheck size={11} />
-                  11/11 Live
+                  {projects.length}/{projects.length} Live
                 </span>
               </div>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                Total akumulasi deal diserahterimakan: <span className="font-mono font-bold text-emerald-400">Rp 26.900.000</span>
+                Total akumulasi deal diserahterimakan: <span className="font-mono font-bold text-emerald-400">{formatCurrency(totalProjectsRevenue)}</span>
               </p>
             </div>
           </div>
@@ -427,16 +444,16 @@ export default function Dashboard() {
             }}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold transition-all group self-start sm:self-center"
           >
-            <span>Buka Tabel Done Projects ({COMPLETED_PROJECTS.length})</span>
+            <span>Buka Tabel Done Projects ({projects.length})</span>
             <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
 
         {/* 4 Featured Recent Projects Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {COMPLETED_PROJECTS.slice(0, 4).map((proj) => (
+          {projects.slice(0, 4).map((proj, idx) => (
             <div
-              key={proj.id}
+              key={proj.id || idx}
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('wb:switch-tab', { detail: 'projects' }));
               }}
@@ -446,7 +463,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-mono text-gray-500">{proj.category}</span>
                   <span className="font-mono text-xs font-bold text-emerald-400">
-                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(proj.price)}
+                    {formatCurrency(proj.price)}
                   </span>
                 </div>
                 <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors truncate">
@@ -457,7 +474,7 @@ export default function Dashboard() {
 
               <div className="pt-2.5 mt-2 border-t border-white/[0.04] flex items-center justify-between">
                 <a
-                  href={proj.url}
+                  href={proj.url || (proj.domain ? `https://${proj.domain}` : '#')}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
