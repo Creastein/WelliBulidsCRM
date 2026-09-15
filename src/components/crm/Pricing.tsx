@@ -667,18 +667,18 @@ Ada waktu luang untuk kita diskusikan detail fiturnya? Terima kasih! 🙏`;
       <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-[#0d0d12]/80 backdrop-blur-xl border border-white/[0.08] p-4 md:p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+        className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-[#0d0d12]/90 backdrop-blur-xl border border-white/[0.08] p-4 md:p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
       >
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium tracking-wide bg-orange-500/10 text-orange-400 border border-orange-500/20">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/25">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-              WB_PRICING_ENGINE_v3.2
+              WLS_RATE_ENGINE_v3.2
             </span>
-            <span className="text-[11px] font-mono text-gray-400">| Standardized Freelance Rate Card</span>
+            <span className="text-[11px] font-mono text-gray-400">| WL-STUDIO Standardized Rate Card</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-white flex items-center gap-2.5">
-            Paket Harga & Matrix Layanan
+            Paket Harga &amp; Matrix Layanan
           </h1>
           <p className="text-xs md:text-sm text-gray-400 max-w-2xl">
             Tabel perbandingan spesifikasi teknis, add-on modular, dan kalkulator penawaran proposal klien.
@@ -748,22 +748,22 @@ Ada waktu luang untuk kita diskusikan detail fiturnya? Terima kasih! 🙏`;
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#0b0b10] border border-white/[0.08] rounded-xl p-2.5 flex flex-col md:flex-row items-start md:items-center gap-2.5 shadow-inner"
+        className="bg-[#0b0b10] border border-white/[0.08] rounded-xl p-2.5 flex flex-col md:flex-row items-stretch md:items-center gap-2.5 shadow-inner"
       >
         {/* Cell Coordinate Box */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="px-2.5 py-1 rounded bg-[#161622] border border-white/10 font-mono text-[11px] font-bold text-orange-400 flex items-center gap-1.5">
+          <div className="px-2.5 py-1.5 rounded bg-[#161622] border border-white/10 font-mono text-[11px] font-bold text-orange-400 flex items-center gap-1.5">
             <span className="text-gray-500">CELL</span>
             <span>[{selectedCell ? `${selectedCell.col}${selectedCell.row}` : 'D01'}]</span>
           </div>
-          <div className="px-2 py-1 rounded bg-white/[0.04] font-mono text-[11px] font-bold text-gray-400">
+          <div className="px-2.5 py-1.5 rounded bg-white/[0.04] font-mono text-[11px] font-bold text-gray-400">
             fx
           </div>
         </div>
 
         {/* Dynamic Formula Display */}
-        <div className="flex-1 w-full bg-[#12121a] border border-white/5 rounded-lg px-3 py-1.5 flex items-center justify-between gap-3 overflow-x-auto">
-          <div className="font-mono text-xs text-gray-300 flex items-center gap-1.5 whitespace-nowrap">
+        <div className="flex-1 min-w-0 bg-[#12121a] border border-white/5 rounded-lg px-3 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="font-mono text-xs text-gray-300 flex items-center gap-1.5 whitespace-nowrap overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             <span className="text-blue-400 font-semibold">=CALCULATE_QUOTE</span>
             <span className="text-gray-500">(</span>
             <span className="text-orange-300">Package</span>
@@ -780,13 +780,13 @@ Ada waktu luang untuk kita diskusikan detail fiturnya? Terima kasih! 🙏`;
             <span className="text-gray-500">)</span>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2 text-xs font-mono font-bold">
+          <div className="shrink-0 flex items-center gap-2 text-xs font-mono font-bold self-end sm:self-center">
             <span className="text-gray-500">TOTAL:</span>
-            <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+            <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-md">
               {formatCurrency(totalProjectPrice)}
             </span>
             {activeMaint && (
-              <span className="text-purple-300 text-[11px]">
+              <span className="text-purple-300 text-[11px] bg-purple-500/10 border border-purple-500/20 px-2 py-1 rounded-md">
                 + {activeMaint.priceDisplay}/bln
               </span>
             )}

@@ -80,13 +80,22 @@ export default function Finance() {
       fetchProjects().then(setProjects).catch(() => { });
     };
 
-    window.addEventListener('wb:projects-updated', handleProjectsUpdated);
-    window.addEventListener('wb:progress-updated', () => {
+    const handleProgressUpdated = () => {
       fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => { });
-    });
+    };
+
+    const handleLeadsUpdated = () => {
+      fetchLeads().then(setLeads).catch(() => { });
+    };
+
+    window.addEventListener('wb:projects-updated', handleProjectsUpdated);
+    window.addEventListener('wb:progress-updated', handleProgressUpdated);
+    window.addEventListener('wb:leads-updated', handleLeadsUpdated);
 
     return () => {
       window.removeEventListener('wb:projects-updated', handleProjectsUpdated);
+      window.removeEventListener('wb:progress-updated', handleProgressUpdated);
+      window.removeEventListener('wb:leads-updated', handleLeadsUpdated);
     };
   }, []);
 
@@ -222,7 +231,8 @@ export default function Finance() {
     const amount = Number(revenueAmount);
     if (isNaN(amount) || amount <= 0) return;
     const prevProgress = progressData;
-    const updatedProgress = { ...progressData, current: progressData.current + amount };
+    const baseCurrent = effectiveRevenue;
+    const updatedProgress = { ...progressData, current: baseCurrent + amount };
     setProgressData(updatedProgress);
     try {
       await saveProgress(updatedProgress);
@@ -245,11 +255,17 @@ export default function Finance() {
     return () => window.removeEventListener('wb:escape', handleEscape as EventListener);
   }, [showRevenueModal]);
 
+  const effectiveDm = totals.dm > 0 ? totals.dm : leads.length;
+  const replyStatuses = ['Follow Up', 'Negosiasi', 'Deal', 'Ditolak'];
+  const leadsReplyCount = leads.filter((l) => replyStatuses.includes(l.status)).length;
+  const effectiveReply = totals.reply > 0 ? totals.reply : leadsReplyCount;
+  const replyRate = effectiveDm > 0 ? ((effectiveReply / effectiveDm) * 100).toFixed(1) : '0';
+
   const summaryCards = [
-    { label: 'Revenue Saat Ini', value: formatCurrency(progressData.current), sub: `dari target ${formatCurrency(progressData.target)}`, color: 'text-emerald-400' },
-    { label: 'Total DM', value: totals.dm, sub: 'semua minggu', color: 'text-blue-400' },
-    { label: 'Total Reply', value: totals.reply, sub: `rate: ${totals.dm > 0 ? ((totals.reply / totals.dm) * 100).toFixed(1) : '0'}%`, color: 'text-purple-400' },
-    { label: 'Total Closing', value: totals.closing, sub: 'klien deal', color: 'text-orange-400' },
+    { label: 'Revenue Saat Ini', value: formatCurrency(effectiveRevenue), sub: `dari target ${formatCurrency(progressData.target)}`, color: 'text-emerald-400' },
+    { label: 'Total DM', value: effectiveDm, sub: 'semua minggu', color: 'text-blue-400' },
+    { label: 'Total Reply', value: effectiveReply, sub: `rate: ${replyRate}%`, color: 'text-purple-400' },
+    { label: 'Total Closing', value: dealCount, sub: 'klien deal', color: 'text-orange-400' },
   ];
 
   return (
@@ -367,7 +383,7 @@ export default function Finance() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-[10px] font-mono mb-1">
                     <span className="text-gray-500">{ms.progress}%</span>
-                    <span className="text-gray-500">{formatCurrency(progressData.current)}</span>
+                    <span className="text-gray-500">{formatCurrency(effectiveRevenue)}</span>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
@@ -662,12 +678,12 @@ export default function Finance() {
               </div>
               <div className="bg-white/5 border border-white/5 rounded-lg p-4">
                 <p className="text-xs font-mono text-gray-500 mb-1">Revenue saat ini</p>
-                <p className="font-mono text-emerald-400">{formatCurrency(progressData.current)}</p>
+                <p className="font-mono text-emerald-400">{formatCurrency(effectiveRevenue)}</p>
                 {revenueAmount && (
                   <>
                     <p className="text-xs font-mono text-gray-500 mt-2 mb-1">Setelah dicatat</p>
                     <p className="font-mono text-white font-bold">
-                      {formatCurrency(progressData.current + (Number(revenueAmount) || 0))}
+                      {formatCurrency(effectiveRevenue + (Number(revenueAmount) || 0))}
                     </p>
                   </>
                 )}

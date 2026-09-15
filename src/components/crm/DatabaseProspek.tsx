@@ -440,10 +440,14 @@ export default function DatabaseProspek() {
       if (editingId) {
         await updateLead(editingId, submitData);
         setLeads(leads.map((l) => (l.id === editingId ? { ...submitData, id: editingId } : l)));
+        window.dispatchEvent(new Event('wb:leads-updated'));
+        window.dispatchEvent(new Event('wb:progress-updated'));
         toast.success('Perubahan berhasil disimpan');
       } else {
         const newLead = await createLead(submitData);
         setLeads([newLead, ...leads]);
+        window.dispatchEvent(new Event('wb:leads-updated'));
+        window.dispatchEvent(new Event('wb:progress-updated'));
         toast.success('Prospek baru ditambahkan');
       }
     } catch (err: unknown) {
@@ -457,6 +461,8 @@ export default function DatabaseProspek() {
       try {
         await deleteLead(id);
         setLeads(leads.filter((l) => l.id !== id));
+        window.dispatchEvent(new Event('wb:leads-updated'));
+        window.dispatchEvent(new Event('wb:progress-updated'));
         toast.error('Prospek dihapus');
       } catch (err: unknown) {
         toast.error(err instanceof Error ? err.message : 'Gagal menghapus data');

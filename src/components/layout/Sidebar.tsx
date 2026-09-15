@@ -150,8 +150,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 </span>
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Target</p>
-                <p className="text-xs font-mono text-white truncate">{formatCurrency(progressData.current)}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Revenue</p>
+                <p className="text-xs font-mono text-emerald-400 font-bold truncate">{formatCurrency(progressData.current)}</p>
               </div>
             </motion.div>
           )}
