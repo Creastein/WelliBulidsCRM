@@ -33,6 +33,11 @@ import { fetchLeads } from '@/services/leadsService';
 import { fetchWeeklyReviews, upsertWeeklyReview } from '@/services/weeklyReviewService';
 import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
+  fetchProjects,
+  type CompletedProject,
+  INITIAL_COMPLETED_PROJECTS,
+} from '@/services/projectsService';
+import {
   DEFAULT_WEEKLY_REVIEWS,
   DEFAULT_MILESTONES,
   DEFAULT_PROGRESS,
@@ -58,6 +63,7 @@ const itemVariants = {
 export default function Finance() {
   const [weeklyReviews, setWeeklyReviews] = useState<WeeklyReview[]>(DEFAULT_WEEKLY_REVIEWS);
   const [progressData, setProgressData] = useState<ProgressData>(DEFAULT_PROGRESS);
+  const [projects, setProjects] = useState<CompletedProject[]>(INITIAL_COMPLETED_PROJECTS);
   const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
 
   // Fetch semua data dari Supabase saat mount
@@ -66,8 +72,22 @@ export default function Finance() {
       if (data.length > 0) setWeeklyReviews(data);
     }).catch(() => {/* silent, pakai default */ });
 
+    fetchProjects().then(setProjects).catch(() => { });
     fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => { });
     fetchLeads().then(setLeads).catch(() => { });
+
+    const handleProjectsUpdated = () => {
+      fetchProjects().then(setProjects).catch(() => { });
+    };
+
+    window.addEventListener('wb:projects-updated', handleProjectsUpdated);
+    window.addEventListener('wb:progress-updated', () => {
+      fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => { });
+    });
+
+    return () => {
+      window.removeEventListener('wb:projects-updated', handleProjectsUpdated);
+    };
   }, []);
 
   // Editing state for weekly review
@@ -81,6 +101,12 @@ export default function Finance() {
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+
+  const totalProjectsRevenue = useMemo(() => {
+    return projects.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
+  }, [projects]);
+
+  const effectiveRevenue = progressData.current > 0 ? progressData.current : totalProjectsRevenue;
 
   const buildCsvValue = (value: string | number) => {
     const normalized = String(value ?? '').replace(/"/g, '""');
@@ -120,12 +146,12 @@ export default function Finance() {
       target: scaledTarget,
       targetLabel: formatCurrency(scaledTarget),
       status:
-        progressData.current >= scaledTarget
+        effectiveRevenue >= scaledTarget
           ? ('achieved' as const)
-          : progressData.current > 0 && progressData.current >= scaledTarget * 0.5
+          : effectiveRevenue > 0 && effectiveRevenue >= scaledTarget * 0.5
             ? ('in-progress' as const)
             : ('pending' as const),
-      progress: Math.min(100, Math.round((progressData.current / scaledTarget) * 100)),
+      progress: Math.min(100, Math.round((effectiveRevenue / scaledTarget) * 100)),
     };
   });
 
@@ -134,7 +160,7 @@ export default function Finance() {
 
   // Progress percentage
   const progressPercent = progressData.target > 0
-    ? Math.min(100, Math.round((progressData.current / progressData.target) * 100))
+    ? Math.min(100, Math.round((effectiveRevenue / progressData.target) * 100))
     : 0;
 
   // Totals from weekly reviews

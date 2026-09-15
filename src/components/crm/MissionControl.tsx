@@ -82,18 +82,25 @@ export default function Dashboard() {
 
   const daysRemaining = Math.max(0, deadlineDiffDays);
 
+  const totalProjectsRevenue = useMemo(() => {
+    return projects.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
+  }, [projects]);
+
+  // Effective revenue: uses progressData.current if explicitly set > 0, otherwise automatically syncs from Done Projects
+  const effectiveRevenue = progressData.current > 0 ? progressData.current : totalProjectsRevenue;
+
   // Progress percentage
   const progressPercent = progressData.target > 0
-    ? Math.min(100, Math.round((progressData.current / progressData.target) * 100))
+    ? Math.min(100, Math.round((effectiveRevenue / progressData.target) * 100))
     : 0;
 
-  const isTargetAchieved = progressData.target > 0 && progressData.current >= progressData.target;
+  const isTargetAchieved = progressData.target > 0 && effectiveRevenue >= progressData.target;
 
-  const surplus = Math.max(0, progressData.current - progressData.target);
+  const surplus = Math.max(0, effectiveRevenue - progressData.target);
 
   // Clients needed
-  const clientsNeeded = progressData.target > progressData.current && progressData.avgDealValue > 0
-    ? Math.ceil((progressData.target - progressData.current) / progressData.avgDealValue)
+  const clientsNeeded = progressData.target > effectiveRevenue && progressData.avgDealValue > 0
+    ? Math.ceil((progressData.target - effectiveRevenue) / progressData.avgDealValue)
     : 0;
 
   // Pipeline summary counts (for quick stats)
@@ -102,10 +109,6 @@ export default function Dashboard() {
     const activeCount = leads.filter(l => ['Follow Up', 'Negosiasi', 'Dihubungi'].includes(l.status)).length;
     return { total: leads.length, deal: dealCount, active: activeCount };
   }, [leads]);
-
-  const totalProjectsRevenue = useMemo(() => {
-    return projects.reduce((acc, p) => acc + p.price, 0);
-  }, [projects]);
 
   // Last modified display
   const lastModifiedText = useMemo(() => {
@@ -294,11 +297,11 @@ export default function Dashboard() {
                 <p
                   className="text-xl md:text-2xl font-mono font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors"
                   onClick={() => {
-                    setRevenueInput(String(progressData.current));
+                    setRevenueInput(String(effectiveRevenue));
                     setEditingRevenue(true);
                   }}
                 >
-                  {formatCurrency(progressData.current)}
+                  {formatCurrency(effectiveRevenue)}
                 </p>
               )}
             </div>
@@ -393,7 +396,7 @@ export default function Dashboard() {
             <span className="flex items-center gap-1.5">
               <TrendingUp size={12} className="text-orange-400" />
               {isTargetAchieved ? 'Surplus' : 'Sisa'}: <span className={`font-semibold ${isTargetAchieved ? 'text-emerald-400' : 'text-orange-400'}`}>
-                {formatCurrency(isTargetAchieved ? surplus : Math.max(0, progressData.target - progressData.current))}
+                {formatCurrency(isTargetAchieved ? surplus : Math.max(0, progressData.target - effectiveRevenue))}
               </span>
             </span>
             <span className="flex items-center gap-1.5">

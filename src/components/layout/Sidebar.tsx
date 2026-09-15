@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_PROGRESS, type ProgressData } from '@/data/dataDefaults';
 import { fetchProgress } from '@/services/progressService';
+import { fetchProjects } from '@/services/projectsService';
 import InstallPwaButton from './InstallPwaButton';
 
 interface SidebarProps {
@@ -19,8 +20,19 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   
   const loadProgress = async () => {
     try {
-      const data = await fetchProgress();
-      if (data) setProgressData(data);
+      const [pData, projectsList] = await Promise.all([
+        fetchProgress().catch(() => null),
+        fetchProjects().catch(() => [])
+      ]);
+      const projectsRevenue = (projectsList || []).reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+      if (pData) {
+        setProgressData({
+          ...pData,
+          current: pData.current > 0 ? pData.current : projectsRevenue,
+        });
+      } else if (projectsRevenue > 0) {
+        setProgressData(prev => ({ ...prev, current: projectsRevenue }));
+      }
     } catch (err) {
       console.error('Failed to sync sidebar progress:', err);
     }
@@ -29,9 +41,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   useEffect(() => {
     loadProgress();
     
-    // Listen for progress updates from MissionControl
+    // Listen for progress and projects updates
     window.addEventListener('wb:progress-updated', loadProgress);
-    return () => window.removeEventListener('wb:progress-updated', loadProgress);
+    window.addEventListener('wb:projects-updated', loadProgress);
+    return () => {
+      window.removeEventListener('wb:progress-updated', loadProgress);
+      window.removeEventListener('wb:projects-updated', loadProgress);
+    };
   }, []);
 
   const progressPercent = progressData.target > 0
