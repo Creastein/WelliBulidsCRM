@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 type ShortcutCallback = () => void;
 
@@ -6,7 +6,13 @@ interface ShortcutMap {
   [key: string]: ShortcutCallback;
 }
 
-export function useKeyboardShortcuts(shortcuts: ShortcutMap, deps: React.DependencyList = []) {
+export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
+  const shortcutsRef = useRef<ShortcutMap>(shortcuts);
+
+  useEffect(() => {
+    shortcutsRef.current = shortcuts;
+  }, [shortcuts]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs/textareas
@@ -30,13 +36,14 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap, deps: React.Depende
           : ''
       ].filter(Boolean).join('+');
 
-      if (shortcuts[keyCombo]) {
+      const action = shortcutsRef.current[keyCombo];
+      if (action) {
         event.preventDefault();
-        shortcuts[keyCombo]();
+        action();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, deps);
+  }, []);
 }

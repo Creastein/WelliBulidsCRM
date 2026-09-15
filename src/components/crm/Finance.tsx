@@ -109,37 +109,33 @@ export default function Finance() {
     URL.revokeObjectURL(url);
   };
 
-  // Auto-calculate milestone status from current revenue
-  const milestones = useMemo(() => {
-    const baseTarget = DEFAULT_PROGRESS.target;
-    const scale = baseTarget > 0 ? progressData.target / baseTarget : 1;
+  // Milestones with live progress
+  const baseTarget = DEFAULT_PROGRESS.target;
+  const scale = baseTarget > 0 ? progressData.target / baseTarget : 1;
 
-    return DEFAULT_MILESTONES.map((ms) => {
-      const scaledTarget = Math.max(1, Math.round(ms.target * scale));
-
-      return {
-        ...ms,
-        target: scaledTarget,
-        targetLabel: formatCurrency(scaledTarget),
-        status:
-          progressData.current >= scaledTarget
-            ? 'achieved'
-            : progressData.current > 0 && progressData.current >= scaledTarget * 0.5
-              ? 'in-progress'
-              : 'pending',
-        progress: Math.min(100, Math.round((progressData.current / scaledTarget) * 100)),
-      };
-    });
-  }, [progressData.current, progressData.target]);
+  const milestones = DEFAULT_MILESTONES.map((m) => {
+    const scaledTarget = Math.max(1, Math.round(m.target * scale));
+    return {
+      ...m,
+      target: scaledTarget,
+      targetLabel: formatCurrency(scaledTarget),
+      status:
+        progressData.current >= scaledTarget
+          ? ('achieved' as const)
+          : progressData.current > 0 && progressData.current >= scaledTarget * 0.5
+            ? ('in-progress' as const)
+            : ('pending' as const),
+      progress: Math.min(100, Math.round((progressData.current / scaledTarget) * 100)),
+    };
+  });
 
   // Deal count from CRM
   const dealCount = useMemo(() => leads.filter((l) => l.status === 'Deal').length, [leads]);
 
   // Progress percentage
-  const progressPercent = useMemo(() => {
-    if (progressData.target <= 0) return 0;
-    return Math.min(100, Math.round((progressData.current / progressData.target) * 100));
-  }, [progressData.current, progressData.target]);
+  const progressPercent = progressData.target > 0
+    ? Math.min(100, Math.round((progressData.current / progressData.target) * 100))
+    : 0;
 
   // Totals from weekly reviews
   const totals = useMemo(() => {

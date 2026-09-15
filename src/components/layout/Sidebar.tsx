@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { LayoutDashboard, Users, LineChart, Tag, GitMerge, MessageSquare, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,10 +34,9 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     return () => window.removeEventListener('wb:progress-updated', loadProgress);
   }, []);
 
-  const progressPercent = useMemo(() => {
-    if (progressData.target <= 0) return 0;
-    return Math.min(100, Math.round((progressData.current / progressData.target) * 100));
-  }, [progressData.current, progressData.target]);
+  const progressPercent = progressData.target > 0
+    ? Math.min(100, Math.round((progressData.current / progressData.target) * 100))
+    : 0;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);

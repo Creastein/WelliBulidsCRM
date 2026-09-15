@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Search,
   Info,
@@ -364,7 +364,7 @@ export default function DatabaseProspek() {
     return { dmCount, replyCount, closingCount };
   }, [leads]);
 
-  const handleOpenModal = (lead?: Lead) => {
+  const handleOpenModal = useCallback((lead?: Lead) => {
     if (lead) {
       setEditingId(lead.id);
       setFormData({
@@ -392,12 +392,12 @@ export default function DatabaseProspek() {
       });
     }
     setIsModalOpen(true);
-  };
+  }, [activeTab]);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingId(null);
-  };
+  }, []);
 
   useEffect(() => {
     const handleNewLead = () => handleOpenModal();

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CheckCircle,
   Target,
@@ -57,34 +57,25 @@ export default function Dashboard() {
   }, []);
 
   // Auto-calculate days remaining
-  const deadlineDiffDays = useMemo(() => {
-    const targetDate = new Date(progressData.targetDate);
-    const now = new Date();
-    const diff = targetDate.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }, [progressData.targetDate, currentTime]);
+  const deadlineDiffDays = Math.ceil(
+    (new Date(progressData.targetDate).getTime() - currentTime.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
-  const daysRemaining = useMemo(() => Math.max(0, deadlineDiffDays), [deadlineDiffDays]);
+  const daysRemaining = Math.max(0, deadlineDiffDays);
 
   // Progress percentage
-  const progressPercent = useMemo(() => {
-    if (progressData.target <= 0) return 0;
-    return Math.min(100, Math.round((progressData.current / progressData.target) * 100));
-  }, [progressData.current, progressData.target]);
+  const progressPercent = progressData.target > 0
+    ? Math.min(100, Math.round((progressData.current / progressData.target) * 100))
+    : 0;
 
-  const isTargetAchieved = useMemo(() => {
-    if (progressData.target <= 0) return false;
-    return progressData.current >= progressData.target;
-  }, [progressData.current, progressData.target]);
+  const isTargetAchieved = progressData.target > 0 && progressData.current >= progressData.target;
 
-  const surplus = useMemo(() => Math.max(0, progressData.current - progressData.target), [progressData.current, progressData.target]);
+  const surplus = Math.max(0, progressData.current - progressData.target);
 
   // Clients needed
-  const clientsNeeded = useMemo(() => {
-    const remaining = progressData.target - progressData.current;
-    if (remaining <= 0) return 0;
-    return Math.ceil(remaining / progressData.avgDealValue);
-  }, [progressData]);
+  const clientsNeeded = progressData.target > progressData.current && progressData.avgDealValue > 0
+    ? Math.ceil((progressData.target - progressData.current) / progressData.avgDealValue)
+    : 0;
 
   // Pipeline summary counts (for quick stats)
   const pipelineStats = useMemo(() => {
