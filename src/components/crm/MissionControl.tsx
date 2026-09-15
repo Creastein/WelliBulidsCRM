@@ -59,11 +59,32 @@ export default function Dashboard() {
   // Fetch data from Supabase & services on mount
   useEffect(() => {
     fetchLeads().then(setLeads).catch(() => {/* silent */ });
-    fetchProjects().then(setProjects).catch(() => {/* silent */ });
-    fetchProgress().then((p) => { if (p) setProgressData(p); }).catch(() => {/* silent */ });
+    fetchProjects().then((projs) => {
+      setProjects(projs);
+      const rev = (projs || []).reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+      if (rev > 0) {
+        setProgressData(prev => ({ ...prev, current: rev }));
+      }
+    }).catch(() => {/* silent */ });
+
+    fetchProgress().then((p) => {
+      if (p) {
+        setProgressData(prev => ({
+          ...p,
+          // If projects already calculated revenue, retain that dynamic value
+          current: prev.current > 0 ? prev.current : p.current,
+        }));
+      }
+    }).catch(() => {/* silent */ });
 
     const handleProjectsUpdated = () => {
-      fetchProjects().then(setProjects).catch(() => {/* silent */ });
+      fetchProjects().then((projs) => {
+        setProjects(projs);
+        const rev = (projs || []).reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+        if (rev > 0) {
+          setProgressData(prev => ({ ...prev, current: rev }));
+        }
+      }).catch(() => {/* silent */ });
     };
 
     window.addEventListener('wb:projects-updated', handleProjectsUpdated);
@@ -86,8 +107,8 @@ export default function Dashboard() {
     return projects.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
   }, [projects]);
 
-  // Effective revenue: uses progressData.current if explicitly set > 0, otherwise automatically syncs from Done Projects
-  const effectiveRevenue = progressData.current > 0 ? progressData.current : totalProjectsRevenue;
+  // Effective revenue: dynamically syncs with total deal values in Done Projects
+  const effectiveRevenue = totalProjectsRevenue > 0 ? totalProjectsRevenue : progressData.current;
 
   // Progress percentage
   const progressPercent = progressData.target > 0

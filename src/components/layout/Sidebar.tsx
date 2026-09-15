@@ -28,10 +28,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       if (pData) {
         setProgressData({
           ...pData,
-          current: pData.current > 0 ? pData.current : projectsRevenue,
+          current: projectsRevenue > 0 ? projectsRevenue : (pData.current || 0),
         });
-      } else if (projectsRevenue > 0) {
-        setProgressData(prev => ({ ...prev, current: projectsRevenue }));
+      } else {
+        setProgressData(prev => ({
+          ...prev,
+          current: projectsRevenue > 0 ? projectsRevenue : prev.current,
+        }));
       }
     } catch (err) {
       console.error('Failed to sync sidebar progress:', err);

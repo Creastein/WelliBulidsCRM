@@ -106,7 +106,7 @@ export default function Finance() {
     return projects.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
   }, [projects]);
 
-  const effectiveRevenue = progressData.current > 0 ? progressData.current : totalProjectsRevenue;
+  const effectiveRevenue = totalProjectsRevenue > 0 ? totalProjectsRevenue : progressData.current;
 
   const buildCsvValue = (value: string | number) => {
     const normalized = String(value ?? '').replace(/"/g, '""');
