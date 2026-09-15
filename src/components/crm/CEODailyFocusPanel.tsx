@@ -7,7 +7,6 @@ import {
   Zap,
   Copy,
   Trash2,
-  Lock,
   CheckCircle,
   X,
   Eye,
@@ -247,7 +246,6 @@ export default function CEODailyFocusPanel() {
       });
     }
 
-    let animationFrameId: number;
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       let active = false;
@@ -271,7 +269,7 @@ export default function CEODailyFocusPanel() {
       });
 
       if (active) {
-        animationFrameId = requestAnimationFrame(draw);
+        requestAnimationFrame(draw);
       } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
@@ -375,7 +373,7 @@ export default function CEODailyFocusPanel() {
 
     // Check if the new task input contains ACC indicators and update needAcc list
     const accKeywords = ["kirim", "publish", "dm", "deploy", "delete", "trade", "acc", "persetujuan"];
-    let updatedNeedAcc = [...output.needAcc];
+    const updatedNeedAcc = [...output.needAcc];
     if (accKeywords.some(kw => newTaskInput.toLowerCase().includes(kw))) {
       updatedNeedAcc.push(newTaskInput);
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { verifyAgentAuth } from "@/lib/agentHelpers";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,26 @@ const MODE_INSTRUCTIONS: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Authorization check: accept valid Bearer token or same-origin browser request
+    const authHeader = req.headers.get("authorization");
+    const isSameOrigin =
+      req.headers.get("sec-fetch-site") === "same-origin" ||
+      req.headers.get("sec-fetch-site") === "same-site";
+
+    if (authHeader) {
+      if (!verifyAgentAuth(req)) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized: Invalid agent token." },
+          { status: 401 }
+        );
+      }
+    } else if (!isSameOrigin && process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Missing agent authorization token." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { mode, message } = body;
 
@@ -39,8 +60,9 @@ Input user:
 ${message}`;
 
     try {
-      // TODO: Keep Hermes cwd pointing to the standalone pipeline project for now.
-      // The Hermes `pipeline` profile/skill behavior may depend on that project context.
+      // Determine working directory for Hermes execution safely
+      const targetCwd = process.env.HERMES_PIPELINE_CWD || "C:/Work/Project/wellibuilds-pipeline";
+
       const { stdout, stderr } = await execFileAsync(
         "hermes",
         [
@@ -54,7 +76,7 @@ ${message}`;
           finalPrompt,
         ],
         {
-          cwd: "C:/Work/Project/wellibuilds-pipeline",
+          cwd: targetCwd,
           timeout: 180000,
           maxBuffer: 1024 * 1024 * 5,
           windowsHide: true,

@@ -1,32 +1,23 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp,
   MessageSquare,
   Calendar,
   Users,
   Target,
-  DollarSign,
-  Filter,
   Plus,
   Search,
   Edit2,
   Trash2,
   X,
   AlertTriangle,
-  Bookmark,
   Sparkles,
   Clock,
-  ArrowRight,
   Megaphone,
-  Percent,
-  Save,
   RefreshCw,
   FileText,
-  ChevronRight,
-  HelpCircle,
-  Undo2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -698,7 +689,6 @@ export default function LeadFlow() {
   // -------------------------------------------------------------
   const [leads, setLeads] = useState<LeadFlowItem[]>([]);
   const [adIntel, setAdIntel] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
   // Filtering/Searching
@@ -800,8 +790,6 @@ export default function LeadFlow() {
     // Load last updated
     const updated = localStorage.getItem('wellibuilds_last_modified') || new Date().toISOString();
     setLastUpdated(updated);
-
-    setIsLoading(false);
   }, []);
 
   // Dispatch events to keep other views (like sidebar, mission control) updated if needed
@@ -877,8 +865,6 @@ export default function LeadFlow() {
     const replied = activeLeads.filter((l) => l.replyCount > 0 || l.status !== 'new').length;
     const won = activeLeads.filter((l) => l.status === 'won').length;
     const lost = activeLeads.filter((l) => l.status === 'lost').length;
-    const proposalSent = activeLeads.filter((l) => l.status === 'proposal_sent').length;
-    const interested = activeLeads.filter((l) => l.status === 'interested').length;
 
     // Qualified defined as interested, proposal_sent, or won
     const qualified = activeLeads.filter((l) => ['interested', 'proposal_sent', 'won'].includes(l.status)).length;
@@ -1291,7 +1277,7 @@ export default function LeadFlow() {
                 {insights.objectionList.map((l) => (
                   <div key={`obj-${l.id}`} className="py-1.5 text-xs text-gray-300 first:pt-0 last:pb-0">
                     <span className="font-semibold text-white">{l.leadName}</span>:{" "}
-                    <span className="italic">"{l.notes.substring(0, 100)}..."</span>
+                    <span className="italic">&quot;{l.notes.substring(0, 100)}...&quot;</span>
                   </div>
                 ))}
               </div>

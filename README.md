@@ -5,8 +5,8 @@
 **Freelance Dashboard — Mission Control, CRM, & Finance**
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 
@@ -18,7 +18,7 @@
 
 **WelliBuilds** adalah dashboard personal untuk mengelola bisnis freelance secara terpusat. Aplikasi ini dirancang sebagai *command center* yang mencakup manajemen proyek, CRM, keuangan, dan pricing — semuanya dalam satu antarmuka yang modern dan responsif.
 
-Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-install di perangkat mobile maupun desktop layaknya aplikasi native.
+Dibangun dengan **Next.js 16 (Turbopack, App Router)** dengan kapabilitas **PWA (Progressive Web App)**, WelliBuilds dapat di-install di perangkat mobile maupun desktop layaknya aplikasi native.
 
 ---
 
@@ -30,9 +30,10 @@ Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-i
 - Progress tracking mingguan
 - Weekly review & retrospective
 
-### 👥 CRM (Database Prospek)
+### 👥 CRM (Database Prospek & Lead Flow)
 - Manajemen database leads/prospek klien
 - Pipeline tracking dengan status management
+- Lead Flow tracking dengan ad intelligence notes
 - Riwayat interaksi & follow-up
 
 ### 💰 Finance
@@ -47,9 +48,9 @@ Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-i
 ### 🎨 UX & Polish
 - Cinematic loading animation
 - 3D shader gradient background
-- Keyboard shortcuts (`Ctrl+1-4` untuk navigasi, `Ctrl+N` untuk lead baru)
+- Keyboard shortcuts (`Ctrl+1-6` untuk navigasi, `Ctrl+N` untuk lead baru)
 - Toast notifications
-- Lazy loading untuk performa optimal
+- Dynamic & lazy loading untuk performa optimal
 
 ---
 
@@ -57,8 +58,8 @@ Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-i
 
 | Kategori | Teknologi | Versi |
 |---|---|---|
-| **Framework** | React | ^19.0.0 |
-| **Build Tool** | Vite | ^6.2.0 |
+| **Framework** | Next.js (App Router, Turbopack) | ^16.2.7 |
+| **UI Library** | React | ^19.2.4 |
 | **Language** | TypeScript | ~5.8.2 |
 | **Styling** | TailwindCSS v4 | ^4.1.14 |
 | **Animation** | Framer Motion | ^12.34.3 |
@@ -68,8 +69,7 @@ Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-i
 | **Icons** | Lucide React | ^0.546.0 |
 | **Notifications** | React Hot Toast | ^2.6.0 |
 | **Date Utilities** | date-fns | ^4.1.0 |
-| **PWA** | vite-plugin-pwa | ^1.2.0 |
-| **AI Integration** | Gemini API | via environment variable |
+| **Schema Validation** | Zod | ^4.4.3 |
 
 ---
 
@@ -77,33 +77,27 @@ Dibangun dengan pendekatan **PWA (Progressive Web App)**, WelliBuilds dapat di-i
 
 ```
 WelliBuilds/
-├── public/                  # Static assets (favicon, logo, icons)
+├── public/                  # Static assets (manifest, logo, icons)
+├── sql/                     # Database migrations & schemas
 ├── src/
-│   ├── App.tsx              # Root component + tab-based routing
-│   ├── main.tsx             # Entry point
-│   ├── index.css            # Global styles
+│   ├── app/                 # Next.js App Router
+│   │   ├── api/             # REST API routes (agent, metrics, leads)
+│   │   ├── layout.tsx       # Root layout & font configuration
+│   │   ├── page.tsx         # Root page mounting AppShell
+│   │   └── globals.css      # Tailwind v4 theme & global styles
 │   ├── components/
-│   │   ├── CinematicLoader.tsx     # Splash screen animation
-│   │   ├── GradientBackground.tsx  # 3D shader background
-│   │   ├── Sidebar.tsx             # Navigation sidebar
-│   │   ├── MissionControl.tsx      # Dashboard utama
-│   │   ├── DatabaseProspek.tsx     # CRM module
-│   │   ├── Finance.tsx             # Finance module
-│   │   └── Pricing.tsx             # Pricing module
+│   │   ├── layout/          # AppShell, Sidebar, InstallPwaButton
+│   │   ├── crm/             # CRM, LeadFlow, MissionControl, Finance, Pricing
+│   │   └── pipeline/        # Pipeline Architect & Hermes integration
 │   ├── data/
-│   │   └── dataDefaults.ts         # Seed data & default values
+│   │   └── dataDefaults.ts  # Types & default data
 │   ├── hooks/
-│   │   ├── useKeyboardShortcuts.ts # Custom keyboard shortcuts
-│   │   └── useLocalStorage.ts      # Persistent local state
+│   │   └── useKeyboardShortcuts.ts
 │   ├── lib/
-│   │   └── supabase.ts             # Supabase client config
-│   └── services/
-│       ├── kpiService.ts           # KPI data queries
-│       ├── leadsService.ts         # Leads CRUD operations
-│       ├── progressService.ts      # Progress tracking
-│       └── weeklyReviewService.ts  # Weekly review data
-├── index.html               # HTML entry point
-├── vite.config.ts           # Vite + PWA + Tailwind config
+│   │   ├── agentHelpers.ts  # Agent API authentication & serialization
+│   │   └── supabase.ts      # Supabase client singleton
+│   └── services/            # Client data services (leads, progress, KPI)
+├── next.config.ts           # Next.js configuration
 ├── tsconfig.json            # TypeScript configuration
 ├── package.json             # Dependencies & scripts
 └── .env.example             # Environment variables template
@@ -111,10 +105,11 @@ WelliBuilds/
 
 ### Key Patterns
 
-- **Lazy Loading** — Semua komponen utama di-load dengan `React.lazy()` + `Suspense` untuk performa optimal
+- **Next.js App Router** — Dynamic route handlers dan client-side AppShell orchestration
 - **Service Layer** — Business logic dipisahkan ke folder `services/` untuk query Supabase
-- **Custom Hooks** — State management via `useLocalStorage` dan `useKeyboardShortcuts`
-- **PWA Ready** — Manifest, service worker, dan offline support via `vite-plugin-pwa`
+- **Agent API Authentication** — Multi-token Bearer authentication untuk AI agents
+- **Custom Hooks** — State management dan keyboard shortcuts (`useKeyboardShortcuts`)
+- **PWA Ready** — Web app manifest dan safe installation prompt untuk desktop/mobile
 
 ---
 

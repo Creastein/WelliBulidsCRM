@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     "dist/**",
     "api/**",
     "sql/**",
+    "scratch/**",
     "next-env.d.ts",
     "vite.config.ts",
     "src/main.tsx",

@@ -96,7 +96,6 @@ export default function AppShell() {
             {activeTab === 'pipeline' && <PipelineWorkspace />}
             {activeTab === 'lead-flow' && <LeadFlow />}
           </Suspense>
-          <Toaster position="bottom-right" toastOptions={{ style: { background: '#222', color: '#fff', border: '1px solid #333', fontSize: '14px' } }} />
         </main>
       </motion.div>
     </div>
