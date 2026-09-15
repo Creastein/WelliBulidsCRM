@@ -14,6 +14,7 @@ const Finance = lazy(() => import('../crm/Finance'));
 const Pricing = lazy(() => import('../crm/Pricing'));
 const PipelineWorkspace = lazy(() => import('../pipeline/PipelineWorkspace'));
 const LeadFlow = lazy(() => import('../crm/LeadFlow'));
+const CompletedProjects = lazy(() => import('../crm/CompletedProjects'));
 
 // Three.js / shadergradient components must be disabled for SSR as they access browser APIs like canvas and window
 const GradientBackground = dynamic(() => import('../crm/GradientBackground'), { ssr: false });
@@ -39,6 +40,7 @@ export default function AppShell() {
     'Ctrl+4': () => setActiveTab('pricing'),
     'Ctrl+5': () => setActiveTab('pipeline'),
     'Ctrl+6': () => setActiveTab('lead-flow'),
+    'Ctrl+7': () => setActiveTab('projects'),
     'Ctrl+N': () => {
       if (activeTab !== 'crm' && activeTab !== 'lead-flow') setActiveTab('crm');
       setTimeout(() => {
@@ -95,6 +97,7 @@ export default function AppShell() {
             {activeTab === 'pricing' && <Pricing />}
             {activeTab === 'pipeline' && <PipelineWorkspace />}
             {activeTab === 'lead-flow' && <LeadFlow />}
+            {activeTab === 'projects' && <CompletedProjects />}
           </Suspense>
         </main>
       </motion.div>

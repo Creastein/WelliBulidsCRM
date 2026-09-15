@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from 'react';
-import { LayoutDashboard, Users, LineChart, Tag, GitMerge, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, LineChart, Tag, GitMerge, MessageSquare, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DEFAULT_PROGRESS, type ProgressData } from '@/data/dataDefaults';
@@ -49,6 +49,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: 'pricing', label: 'Pricing Packages', icon: Tag, shortcut: 'Ctrl+4' },
     { id: 'pipeline', label: 'Pipeline Architect', icon: GitMerge, shortcut: 'Ctrl+5' },
     { id: 'lead-flow', label: 'Lead Flow', icon: MessageSquare, shortcut: 'Ctrl+6' },
+    { id: 'projects', label: 'Done Projects', icon: Briefcase, shortcut: 'Ctrl+7' },
   ];
 
   useEffect(() => {
