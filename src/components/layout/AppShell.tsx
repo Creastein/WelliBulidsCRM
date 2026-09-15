@@ -56,6 +56,17 @@ export default function AppShell() {
     }
   });
 
+  React.useEffect(() => {
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener('wb:switch-tab', handleSwitchTab);
+    return () => window.removeEventListener('wb:switch-tab', handleSwitchTab);
+  }, []);
+
   return (
     <div className="relative flex h-screen text-white font-sans selection:bg-orange-500/30 overflow-hidden">
       {isInitialLoading && <CinematicLoader onComplete={() => setIsInitialLoading(false)} />}

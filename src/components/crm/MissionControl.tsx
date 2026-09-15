@@ -14,9 +14,15 @@ import {
   DollarSign,
   Clock,
   Users,
+  Briefcase,
+  Globe,
+  ArrowRight,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CEODailyFocusPanel from './CEODailyFocusPanel';
+import { COMPLETED_PROJECTS } from './CompletedProjects';
 import { fetchLeads } from '@/services/leadsService';
 import { fetchProgress, saveProgress } from '@/services/progressService';
 import {
@@ -391,6 +397,81 @@ export default function Dashboard() {
           CEO DAILY FOCUS (Compact)
          ═══════════════════════════════════════════════════════════ */}
       <CEODailyFocusPanel />
+
+      {/* ═══════════════════════════════════════════════════════════
+          DONE PROJECTS & PORTFOLIO HUB
+         ═══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#0f0f14]/80 border border-white/[0.08] rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
+              <Briefcase size={17} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white tracking-tight">Done Projects & Live Portfolio</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                  <ShieldCheck size={11} />
+                  11/11 Live
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Total akumulasi deal diserahterimakan: <span className="font-mono font-bold text-emerald-400">Rp 26.900.000</span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('wb:switch-tab', { detail: 'projects' }));
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold transition-all group self-start sm:self-center"
+          >
+            <span>Buka Tabel Done Projects ({COMPLETED_PROJECTS.length})</span>
+            <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </div>
+
+        {/* 4 Featured Recent Projects Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {COMPLETED_PROJECTS.slice(0, 4).map((proj) => (
+            <div
+              key={proj.id}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('wb:switch-tab', { detail: 'projects' }));
+              }}
+              className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-orange-500/30 hover:bg-white/[0.04] transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-mono text-gray-500">{proj.category}</span>
+                  <span className="font-mono text-xs font-bold text-emerald-400">
+                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(proj.price)}
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors truncate">
+                  {proj.name}
+                </h4>
+                <p className="text-[11px] text-gray-400 truncate mt-0.5">{proj.clientName} · {proj.location}</p>
+              </div>
+
+              <div className="pt-2.5 mt-2 border-t border-white/[0.04] flex items-center justify-between">
+                <a
+                  href={proj.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-mono text-[10px] text-orange-400/90 hover:text-orange-300 hover:underline flex items-center gap-1 truncate"
+                >
+                  <Globe size={10} />
+                  {proj.domain}
+                </a>
+                <ExternalLink size={11} className="text-gray-500 group-hover:text-orange-400 transition-colors shrink-0" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ═══════════════════════════════════════════════════════════
           TARGET SETTINGS MODAL
