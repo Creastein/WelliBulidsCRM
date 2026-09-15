@@ -15,8 +15,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  DollarSign,
-  ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
